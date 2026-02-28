@@ -8,8 +8,10 @@
     "start": "next start",
     "lint": "eslint"
   },
+  "optionalDependencies": {
+    "@next/swc-win32-x64-msvc": "^16.1.6"
+  },
   "dependencies": {
-    "@next/swc-win32-x64-msvc": "^16.1.6",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.98.0",
     "harper.js": "^1.7.0",
