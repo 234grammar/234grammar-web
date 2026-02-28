@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -22,7 +22,7 @@ type Document = {
   wordCount: number;
 };
 
-export default function EditorPage() {
+function EditorPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editorRef = useRef<HTMLDivElement>(null);
@@ -726,5 +726,13 @@ export default function EditorPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function EditorPage() {
+  return (
+    <Suspense>
+      <EditorPageInner />
+    </Suspense>
   );
 }
