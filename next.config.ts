@@ -1,11 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  webpack: (config) => {
-    config.experiments = { ...config.experiments, asyncWebAssembly: true };
-    config.output.webassemblyModuleFilename = "static/wasm/[modulehash].wasm";
-    return config;
-  },
+  // No webpack/turbopack WASM config needed — harper.js loads its WASM binary
+  // via URL (fetch), not via module import, so no bundler config is required.
 };
 
 export default nextConfig;
