@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+
+
+@theme inline {
+  --color-primary: #008751;
+  --color-primaryHover: #006B40;
+  --color-gold: #FCD12A;
+  --color-goldLight: #FEF3CD;
+  --font-sans: var(--font-geist-sans);
+  --font-ibm: var(--font-ibm-plex-sans);
+}
+
+
+body {
+  background: #F8FAFC;
+  color: #0F172A;
+  font-family: var(--font-sans);
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes shimmer {
+  0% { background-position: -468px 0; }
+  100% { background-position: 468px 0; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.fade-in { animation: fadeIn 0.5s ease-out; }
+.fade-in-up { animation: fadeInUp 0.6s ease-out; }
+.slide-in-left { animation: slideInLeft 0.6s ease-out; }
+.slide-in-right { animation: slideInRight 0.6s ease-out; }
+.animate-pulse-slow { animation: pulse-slow 3s ease-in-out infinite; }
+.float { animation: float 3s ease-in-out infinite; }
+
+.delay-100 { animation-delay: 0.1s; animation-fill-mode: both; }
+.delay-200 { animation-delay: 0.2s; animation-fill-mode: both; }
+.delay-300 { animation-delay: 0.3s; animation-fill-mode: both; }
+.delay-400 { animation-delay: 0.4s; animation-fill-mode: both; }
+
+/* Loading spinner */
+.spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #008751;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Skeleton loading */
+.skeleton {
+  background: linear-gradient(to right, #f0f0f0 8%, #e0e0e0 18%, #f0f0f0 33%);
+  background-size: 800px 104px;
+  animation: shimmer 1.5s infinite linear;
+}
+
+/* Grammar underlines */
+.error-spelling {
+  text-decoration: underline;
+  text-decoration-color: #ef4444;
+  text-decoration-thickness: 2px;
+  text-decoration-style: wavy;
+  cursor: pointer;
+}
+.error-grammar {
+  text-decoration: underline;
+  text-decoration-color: #eab308;
+  text-decoration-thickness: 2px;
+  text-decoration-style: wavy;
+  cursor: pointer;
+}
+.error-style {
+  text-decoration: underline;
+  text-decoration-color: #3b82f6;
+  text-decoration-thickness: 2px;
+  cursor: pointer;
+}
+.error-nigerian {
+  text-decoration: underline;
+  text-decoration-color: #a855f7;
+  text-decoration-thickness: 2px;
+  cursor: pointer;
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar { width: 8px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #555; }
+
+/* Progress dot */
+.progress-dot { transition: all 0.3s ease; }
+.progress-dot.active { background-color: #008751; transform: scale(1.2); }
+
+/* Password toggle cursor */
+.password-toggle { cursor: pointer; user-select: none; }
+
+/* Tooltip positioning */
+.tooltip { position: absolute; z-index: 1000; }
