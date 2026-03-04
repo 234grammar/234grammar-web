@@ -1,6 +1,6 @@
 import type { HarperIssue } from './harper';
 
-// Core Pidgin vocabulary
+// Core Pidgin vocabulary, including modern slang, insults, and Lagos staples
 const PIDGIN_DICTIONARY = new Set([
   // Pronouns / person markers
   'im', 'am', 'una', 'dem',
@@ -9,14 +9,21 @@ const PIDGIN_DICTIONARY = new Set([
   // Modals
   'fit', 'wan', 'sabi', 'gree',
   // Common Pidgin verbs
-  'chop', 'waka', 'commot', 'chook', 'kuku', 'knack',
-  // Nouns / expressives
+  'chop', 'waka', 'commot', 'chook', 'kuku', 'knack', 'japa', 'fashi', 'kpai',
+  'siddon', 'tanda', 'helep', 'kukuma', 'jejely', 'para', 'yab', 'yarn',
+  // Nouns / expressives / slang
   'wahala', 'oga', 'madam', 'pikin', 'pesin', 'palava',
   'gist', 'kpele', 'abeg', 'walahi', 'oya', 'jare', 'sef',
   'sha', 'abi', 'ehn', 'ehen', 'nau', 'shey', 'yawa',
   'nawa', 'naija', 'danfo', 'keke', 'okada', 'wetin',
+  'sapa', 'vawulence', 'shalaye', 'aza', 'trenches', 'idan', 'shege',
+  'mumu', 'ode', 'werey', 'ment', 'oloriburuku',
+  'tush', 'kpali', 'jara', 'awoof', 'berekete', 'soso', 'banza',
+  'bodi', 'belle', 'mata', 'beta', 'lekpa', 'gbege', 'tori',
+  'shakara', 'chai', 'gbam', 'haba', 'yansh', 'nyash', 'mehn', 'kai',
+  'totori', 'wayo', 'maga',
   // Question words
-  'wia', 'wen',
+  'wia', 'wen', 'howfar',
   // Negation
   'nor',
   // Common Pidgin particles
@@ -53,6 +60,56 @@ const PIDGIN_MISSPELLINGS: Record<string, string> = {
   fiit: 'fit',
   wahn: 'wan',
   commout: 'commot',
+  vawulance: 'vawulence',
+  vawulense: 'vawulence',
+  sappah: 'sapa',
+  mummu: 'mumu',
+  ashaawo: 'ashawo',
+  shae: 'shey',
+  // siddon
+  sidon: 'siddon',
+  sidong: 'siddon',
+  siddong: 'siddon',
+  // tanda
+  tandah: 'tanda',
+  tandar: 'tanda',
+  // beta
+  beter: 'beta',
+  betta: 'beta',
+  // jejely
+  jejeli: 'jejely',
+  jejeleh: 'jejely',
+  jeejely: 'jejely',
+  jeje: 'jejely',
+  // para
+  paara: 'para',
+  paraa: 'para',
+  // yab
+  yabb: 'yab',
+  yaab: 'yab',
+  // mata
+  matta: 'mata',
+  mattar: 'mata',
+  // kpai
+  kpaii: 'kpai',
+  kpay: 'kpai',
+  // lekpa
+  lekpah: 'lekpa',
+  // werey
+  weri: 'werey',
+  wirry: 'werey',
+  // wayo
+  wayoo: 'wayo',
+  // gbege
+  gbegeh: 'gbege',
+  // tori
+  torii: 'tori',
+  torry: 'tori',
+  // helep
+  halep: 'helep',
+  // kukuma
+  kookuma: 'kukuma',
+  kukumah: 'kukuma',
 };
 
 // Common English words to exclude from Pidgin spell-check false positives
@@ -73,6 +130,8 @@ const COMMON_ENGLISH = new Set([
   'well', 'now', 'then', 'here', 'time', 'day', 'good', 'new', 'old', 'big',
   'long', 'great', 'little', 'own', 'right', 'high', 'place', 'man', 'woman',
   'say', 'people', 'talk', 'write', 'one', 'two', 'three', 'four', 'five',
+  'sharp', 'correct', 'last', 'body', 'matter', 'story', 'blow', 'shine',
+  'pepper', 'ginger', 'flash', 'yarn', 'manage', 'fit', 'para', 'beta',
 ]);
 
 // Levenshtein edit distance (iterative, space-efficient)
@@ -110,66 +169,38 @@ function suggestPidginWord(word: string): string | null {
 
 // Positive Pidgin grammar patterns — mark valid Pidgin as isCorrect: true
 const PIDGIN_POSITIVE_PATTERNS: Array<{ pattern: RegExp; message: string }> = [
-  {
-    pattern: /\bwetin dey happen\b/gi,
-    message: '✓ Valid Pidgin — "what is happening?"',
-  },
-  {
-    pattern: /\bno wahala\b/gi,
-    message: '✓ Valid Pidgin — "no problem"',
-  },
-  {
-    pattern: /\bI no fit\b/gi,
-    message: '✓ Valid Pidgin negation with modal — "I can\'t"',
-  },
-  {
-    pattern: /\b\w+ dey \w+/gi,
-    message: '✓ Valid Pidgin progressive construction',
-  },
-  {
-    pattern: /\bna im\b/gi,
-    message: '✓ Valid Pidgin emphasis — "it is him / it is that"',
-  },
-  {
-    pattern: /\b\w+ don \w+/gi,
-    message: '✓ Valid Pidgin perfective — completed action',
-  },
-  {
-    pattern: /\be don do\b/gi,
-    message: '✓ Valid Pidgin — "it\'s done / it\'s over"',
-  },
-  {
-    pattern: /\bno be so\b/gi,
-    message: '✓ Valid Pidgin tag question — "isn\'t that right?"',
-  },
-  {
-    pattern: /\bhow far\b/gi,
-    message: '✓ Valid Pidgin greeting — "how are you?"',
-  },
-  {
-    pattern: /\babeg\b/gi,
-    message: '✓ Valid Pidgin — "please"',
-  },
-  {
-    pattern: /\bna so\b/gi,
-    message: '✓ Valid Pidgin — "that\'s right / indeed"',
-  },
-  {
-    pattern: /\b\w+ go \w+/gi,
-    message: '✓ Valid Pidgin future tense construction',
-  },
-  {
-    pattern: /\bwetin be\b/gi,
-    message: '✓ Valid Pidgin — "what is"',
-  },
-  {
-    pattern: /\bwhere you dey\b/gi,
-    message: '✓ Valid Pidgin — "where are you?"',
-  },
-  {
-    pattern: /\bI dey\b/gi,
-    message: '✓ Valid Pidgin — "I am / I\'m here"',
-  },
+  { pattern: /\bwetin dey happen\b/gi, message: '✓ Valid Pidgin — "what is happening?"' },
+  { pattern: /\bno wahala\b/gi, message: '✓ Valid Pidgin — "no problem"' },
+  { pattern: /\bI no fit\b/gi, message: '✓ Valid Pidgin negation with modal — "I can\'t"' },
+  // Tightened: require known Pidgin subjects before 'dey' to avoid false positives
+  { pattern: /\b(i|e|im|una|dem|we|you|na)\s+dey\s+\w+/gi, message: '✓ Valid Pidgin progressive construction' },
+  { pattern: /\bna im\b/gi, message: '✓ Valid Pidgin emphasis — "it is him / it is that"' },
+  { pattern: /\b\w+\s+don\s+\w+\b/gi, message: '✓ Valid Pidgin perfective — completed action' },
+  { pattern: /\be don do\b/gi, message: '✓ Valid Pidgin — "it\'s done / it\'s over"' },
+  { pattern: /\bno be so\b/gi, message: '✓ Valid Pidgin tag question — "isn\'t that right?"' },
+  { pattern: /\bhow ?far\b/gi, message: '✓ Valid Pidgin greeting — "how are you?"' },
+  { pattern: /\babeg\b/gi, message: '✓ Valid Pidgin — "please"' },
+  { pattern: /\bna so\b/gi, message: '✓ Valid Pidgin — "that\'s right / indeed"' },
+  { pattern: /\b\w+ go \w+/gi, message: '✓ Valid Pidgin future tense construction' },
+  { pattern: /\bwetin be\b/gi, message: '✓ Valid Pidgin — "what is"' },
+  { pattern: /\bwhere you dey\b/gi, message: '✓ Valid Pidgin — "where are you?"' },
+  { pattern: /\bI dey\b/gi, message: '✓ Valid Pidgin — "I am / I\'m here"' },
+  { pattern: /\bsee shege\b/gi, message: '✓ Valid Pidgin — "to go through extreme hardship"' },
+  { pattern: /\bsapa dey\b/gi, message: '✓ Valid Pidgin — "there is brokenness / lack of money"' },
+  { pattern: /\bshine your eyes\b/gi, message: '✓ Valid Pidgin — "be alert / don\'t be naive"' },
+  { pattern: /\be be like\b/gi, message: '✓ Valid Pidgin — "it seems / it looks like"' },
+  { pattern: /\blast last\b/gi, message: '✓ Valid Pidgin — "in the end / ultimately"' },
+  { pattern: /\bno dulling\b/gi, message: '✓ Valid Pidgin — "don\'t hesitate / keep it moving"' },
+  { pattern: /\bwaka pass\b/gi, message: '✓ Valid Pidgin — "irrelevant / just passing by"' },
+  { pattern: /\be don finish\b/gi, message: '✓ Valid Pidgin — "it\'s completely over"' },
+  { pattern: /\bwetin happen\b/gi, message: '✓ Valid Pidgin — "what happened?"' },
+  { pattern: /\bI no go\b/gi, message: '✓ Valid Pidgin future negation — "I won\'t"' },
+  { pattern: /\bna true\b/gi, message: '✓ Valid Pidgin — "that\'s true / indeed"' },
+  { pattern: /\bwetin you dey do\b/gi, message: '✓ Valid Pidgin — "what are you doing?"' },
+  { pattern: /\bno be lie\b/gi, message: '✓ Valid Pidgin — "that\'s the truth / no joke"' },
+  { pattern: /\bI don tire\b/gi, message: '✓ Valid Pidgin — "I\'m exhausted / fed up"' },
+  { pattern: /\bwia you dey\b/gi, message: '✓ Valid Pidgin — "where are you?"' },
+  { pattern: /\bna joke\b/gi, message: '✓ Valid Pidgin — "it\'s a joke / just kidding"' },
 ];
 
 // English structure warnings in Pidgin mode
@@ -178,31 +209,15 @@ const PIDGIN_ENGLISH_WARNINGS: Array<{
   message: string;
   suggestion: string;
 }> = [
-  {
-    pattern: /\bcannot\b/gi,
-    message: 'In Pidgin, "no fit" is used instead of "cannot"',
-    suggestion: 'no fit',
-  },
-  {
-    pattern: /\bcan't\b/gi,
-    message: 'In Pidgin, "no fit" is used instead of "can\'t"',
-    suggestion: 'no fit',
-  },
-  {
-    pattern: /\bI am going\b/gi,
-    message: 'In Pidgin, "I dey go" is used instead of "I am going"',
-    suggestion: 'I dey go',
-  },
-  {
-    pattern: /\bI have done\b/gi,
-    message: 'In Pidgin, "I don do am" is used for completed actions',
-    suggestion: 'I don do am',
-  },
-  {
-    pattern: /\bhe is (?!called|named)\w+/gi,
-    message: 'In Pidgin, "e dey" or "na im" is used instead of "he is"',
-    suggestion: 'e dey / na im',
-  },
+  { pattern: /\bcannot\b/gi, message: 'In Pidgin, "no fit" is used instead of "cannot"', suggestion: 'no fit' },
+  { pattern: /\bcan't\b/gi, message: 'In Pidgin, "no fit" is used instead of "can\'t"', suggestion: 'no fit' },
+  { pattern: /\bI am going\b/gi, message: 'In Pidgin, "I dey go" is used instead of "I am going"', suggestion: 'I dey go' },
+  { pattern: /\bI have done\b/gi, message: 'In Pidgin, "I don do am" is used for completed actions', suggestion: 'I don do am' },
+  { pattern: /\bhe is (?!called|named)\w+/gi, message: 'In Pidgin, "e dey" or "na im" is used instead of "he is"', suggestion: 'e dey / na im' },
+  { pattern: /\bI will not\b/gi, message: 'In Pidgin, "I no go" is used instead of "I will not"', suggestion: 'I no go' },
+  { pattern: /\bwe are going\b/gi, message: 'In Pidgin, "we dey go" is used instead of "we are going"', suggestion: 'we dey go' },
+  { pattern: /\bthey have\b/gi, message: 'In Pidgin, "dem don" is used for "they have" (completed action)', suggestion: 'dem don' },
+  { pattern: /\bit is not\b/gi, message: 'In Pidgin, "e no be" is used instead of "it is not"', suggestion: 'e no be' },
 ];
 
 export function lintPidgin(text: string): HarperIssue[] {
@@ -235,7 +250,7 @@ export function lintPidgin(text: string): HarperIssue[] {
       continue;
     }
 
-    // Edit distance fallback (words ≥ 4 chars only, distance ≤ 1)
+    // Edit distance fallback (words >= 4 chars only, distance <= 1)
     if (lower.length >= 4) {
       const suggestion = suggestPidginWord(lower);
       if (suggestion) {

@@ -450,9 +450,15 @@ function EditorPageInner() {
 
   const handleLanguageModeChange = (mode: string) => {
     setLanguageMode(mode);
-    const text = editorRef.current?.textContent || "";
-    checkGrammarWithHarper(text, checksUsed, userPlan);
   };
+
+  // Re-run grammar check whenever the language mode changes
+  useEffect(() => {
+    const text = editorRef.current?.textContent || "";
+    if (!text.trim()) return;
+    checkGrammarWithHarper(text, checksUsed, userPlan);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [languageMode]);
 
   const handleSave = async () => {
     await performAutoSave();
