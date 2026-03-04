@@ -11,7 +11,7 @@ export async function GET() {
 
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('plan, checks_used, checks_reset_at, use_case, default_mode, email_tips, email_features, email_product, trial_ends_at')
+    .select('plan, checks_used, checks_reset_at, mode, trial_ends_at')
     .eq('id', user.id)
     .single();
 
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
 
   // Only allow safe fields to be updated
-  const allowed = ['use_case', 'default_mode', 'email_tips', 'email_features', 'email_product'];
+  const allowed = ['mode', 'use_case', 'email_tips', 'email_features', 'email_product'];
   const updates: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in body) updates[key] = body[key];

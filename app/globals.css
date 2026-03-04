@@ -85,33 +85,6 @@ html {
   animation: shimmer 1.5s infinite linear;
 }
 
-/* Grammar underlines */
-.error-spelling {
-  text-decoration: underline;
-  text-decoration-color: #ef4444;
-  text-decoration-thickness: 2px;
-  text-decoration-style: wavy;
-  cursor: pointer;
-}
-.error-grammar {
-  text-decoration: underline;
-  text-decoration-color: #eab308;
-  text-decoration-thickness: 2px;
-  text-decoration-style: wavy;
-  cursor: pointer;
-}
-.error-style {
-  text-decoration: underline;
-  text-decoration-color: #3b82f6;
-  text-decoration-thickness: 2px;
-  cursor: pointer;
-}
-.error-nigerian {
-  text-decoration: underline;
-  text-decoration-color: #a855f7;
-  text-decoration-thickness: 2px;
-  cursor: pointer;
-}
 
 /* Custom scrollbar */
 .custom-scrollbar::-webkit-scrollbar { width: 8px; }

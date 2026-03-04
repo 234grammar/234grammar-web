@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
+import { NavAuthButtons } from "../components/NavAuthButtons";
 import Link from "next/link";
 import Image from "next/image";
 import { FaXTwitter } from "react-icons/fa6";
@@ -12,12 +14,7 @@ export default function ContactPage() {
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
-  const [selectedFile, setSelectedFile] = useState("");
   const [loading, setLoading] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const successRef = useRef<HTMLDivElement>(null);
 
   // Handle URL hash for pre-filling category
   useEffect(() => {
@@ -32,22 +29,9 @@ export default function ContactPage() {
     }
   }, []);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      alert("File is too large. Maximum size is 10MB.");
-      e.target.value = "";
-      return;
-    }
-    setSelectedFile(file.name);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setSuccessMsg("");
-    setErrorMsg("");
 
     const data = {
       category,
@@ -67,25 +51,18 @@ export default function ContactPage() {
       });
 
       if (response.ok) {
-        setSuccessMsg("Message sent!");
+        toast.success("Message sent! We'll get back to you within 24 hours.");
         setCategory("");
         setFirstName("");
         setLastName("");
         setEmail("");
         setSubject("");
         setMessage("");
-        setSelectedFile("");
-        if (fileInputRef.current) fileInputRef.current.value = "";
-        setTimeout(() => setSuccessMsg(""), 5000);
       } else {
-        setErrorMsg(
-          "Failed to send message. Please try again or email us directly.",
-        );
+        toast.error("Failed to send message. Please try again or email us directly.");
       }
     } catch {
-      setErrorMsg(
-        "Something went wrong. Please email us at hello@234grammar.com",
-      );
+      toast.error("Something went wrong. Please email us at hello@234grammar.com");
     } finally {
       setLoading(false);
     }
@@ -124,18 +101,7 @@ export default function ContactPage() {
             >
               About
             </Link>
-            <Link
-              href="/login"
-              className="text-gray-600 hover:text-primary transition"
-            >
-              Login
-            </Link>
-            <Link
-              href="/signup"
-              className="bg-primary text-white px-5 py-2.5 rounded-lg hover:bg-primaryHover transition font-semibold"
-            >
-              Start Free
-            </Link>
+            <NavAuthButtons />
           </div>
         </div>
       </nav>
@@ -259,7 +225,7 @@ export default function ContactPage() {
 
             {/* Press */}
             <a
-              href="mailto:press@234grammar.com"
+              href="mailto:hello@234grammar.com"
               className="bg-linear-to-br from-orange-50 to-white border-2 border-orange-100 rounded-2xl p-8 hover:border-primary hover:shadow-lg transition text-center group"
             >
               <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-primary transition">
@@ -282,7 +248,7 @@ export default function ContactPage() {
                 Journalists and media inquiries
               </p>
               <span className="text-primary font-semibold text-sm">
-                press@234grammar.com
+                hello@234grammar.com
               </span>
             </a>
           </div>
@@ -297,61 +263,6 @@ export default function ContactPage() {
             <div>
               <div className="bg-white rounded-2xl shadow-xl p-8 md:p-10 border-2 border-gray-100">
                 <h2 className="text-3xl font-bold mb-6">Send Us a Message</h2>
-
-                {/* Success Message */}
-                {successMsg && (
-                  <div
-                    ref={successRef}
-                    className="mb-6 bg-green-50 border-2 border-green-200 rounded-lg p-4"
-                  >
-                    <div className="flex items-start">
-                      <svg
-                        className="w-5 h-5 text-green-600 mr-2 shrink-0 mt-0.5"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <div>
-                        <p className="font-semibold text-green-800">
-                          Message Sent!
-                        </p>
-                        <p className="text-sm text-green-700 mt-1">
-                          We&apos;ll get back to you within 24 hours.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Error Message */}
-                {errorMsg && (
-                  <div className="mb-6 bg-red-50 border-2 border-red-200 rounded-lg p-4">
-                    <div className="flex items-start">
-                      <svg
-                        className="w-5 h-5 text-red-600 mr-2 shrink-0 mt-0.5"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <div>
-                        <p className="font-semibold text-red-800">
-                          Something went wrong
-                        </p>
-                        <p className="text-sm text-red-700 mt-1">{errorMsg}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Category */}
@@ -440,7 +351,6 @@ export default function ContactPage() {
 
                   {/* Subject */}
                   <div>
-                    x.com
                     <label
                       htmlFor="subject"
                       className="block text-sm font-semibold mb-2"
@@ -478,52 +388,6 @@ export default function ContactPage() {
                     <p className="text-xs text-gray-500 mt-2">
                       Please include as much detail as possible
                     </p>
-                  </div>
-
-                  {/* File Attachment */}
-                  <div>
-                    <label className="block text-sm font-semibold mb-2">
-                      Attachment (Optional)
-                    </label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary transition">
-                      <input
-                        type="file"
-                        id="attachment"
-                        ref={fileInputRef}
-                        accept="image/*,.pdf,.doc,.docx"
-                        className="hidden"
-                        onChange={handleFileSelect}
-                      />
-                      <label htmlFor="attachment" className="cursor-pointer">
-                        <svg
-                          className="w-10 h-10 mx-auto mb-2 text-gray-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                          />
-                        </svg>
-                        <p className="text-sm text-gray-600">
-                          <span className="text-primary font-semibold">
-                            Click to upload
-                          </span>{" "}
-                          or drag and drop
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          PNG, JPG, PDF up to 10MB
-                        </p>
-                      </label>
-                      {selectedFile && (
-                        <p className="mt-3 text-sm text-gray-700">
-                          Selected: {selectedFile}
-                        </p>
-                      )}
-                    </div>
                   </div>
 
                   {/* Submit Button */}
@@ -695,7 +559,7 @@ export default function ContactPage() {
                     },
                     {
                       q: "Looking for bulk licenses?",
-                      a: 'Select "Sales & Enterprise" above or email sales@234grammar.com for custom pricing and dedicated support.',
+                      a: 'Select "Sales & Enterprise" above or email hello@234grammar.com for custom pricing and dedicated support.',
                       border: true,
                     },
                   ].map(({ q, a, border }) => (

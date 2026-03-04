@@ -13,9 +13,7 @@ export async function POST(request: NextRequest) {
   // Store in DB
   const serviceClient = await createServiceClient();
   const { error } = await serviceClient.from('contact_submissions').insert({
-    category: body.category ?? null,
-    first_name: body.firstName ?? null,
-    last_name: body.lastName ?? null,
+    name: [body.firstName, body.lastName].filter(Boolean).join(' ') || null,
     email,
     subject: body.subject ?? null,
     message,

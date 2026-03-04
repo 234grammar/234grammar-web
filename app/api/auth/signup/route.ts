@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { sendWelcomeEmail } from '@/lib/email/resend';
 
 export async function POST(request: NextRequest) {
-  const { email, password, plan = 'free' } = await request.json();
+  const { email, password } = await request.json();
 
   if (!email || !password) {
     return NextResponse.json({ message: 'Email and password are required.' }, { status: 400 });
@@ -27,12 +28,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: 'Signup failed. Please try again.' }, { status: 500 });
   }
 
-  // Insert profile using service role (bypasses RLS)
-  const serviceClient = await createServiceClient();
-  const { error: profileError } = await serviceClient.from('profiles').insert({
+  // Insert profile using admin client (bypasses RLS)
+  const adminClient = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+  const { error: profileError } = await adminClient.from('profiles').insert({
     id: data.user.id,
     email,
-    plan,
+    plan: 'free',
   });
 
   if (profileError && profileError.code !== '23505') {
@@ -41,7 +46,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Fire-and-forget welcome email (don't block signup on email failure)
-  sendWelcomeEmail({ email, plan }).catch((err) =>
+  sendWelcomeEmail({ email, plan: 'free' }).catch((err) =>
     console.error('Welcome email failed:', err)
   );
 

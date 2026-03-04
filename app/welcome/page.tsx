@@ -9,7 +9,10 @@ function WelcomePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
+  const [loading, setLoading] = useState(true);
   const [userPlan, setUserPlan] = useState("free");
+  const [pendingUpgrade, setPendingUpgrade] = useState(false);
+  const [startingPayment, setStartingPayment] = useState(false);
 
   // Personalization form state
   const [useCase, setUseCase] = useState("");
@@ -19,8 +22,38 @@ function WelcomePageInner() {
   const [emailProduct, setEmailProduct] = useState(false);
 
   useEffect(() => {
-    const plan = searchParams.get("plan") || "free";
-    setUserPlan(plan);
+    async function load() {
+      // If returning from successful payment, clear the pending flag
+      const paymentSuccess = searchParams.get("payment") === "success";
+      if (paymentSuccess) {
+        localStorage.removeItem("pendingUpgrade");
+      }
+
+      const pending = !paymentSuccess && localStorage.getItem("pendingUpgrade") === "true";
+      let currentPlan = "free";
+
+      try {
+        const res = await fetch("/api/user/preferences");
+        if (res.ok) {
+          const data = await res.json();
+          currentPlan = data.plan ?? "free";
+          setUserPlan(currentPlan);
+          if (data.mode) setDefaultMode(data.mode);
+        }
+      } catch {
+        // fall through to defaults
+      }
+
+      // Show payment step if pending upgrade and still on free plan
+      // (runs even if preferences failed — profile may not exist yet)
+      if (pending && currentPlan === "free") {
+        setPendingUpgrade(true);
+        setCurrentStep(0);
+      }
+
+      setLoading(false);
+    }
+    load();
   }, [searchParams]);
 
   const nextStep = () => {
@@ -31,23 +64,37 @@ function WelcomePageInner() {
   };
 
   const skipToEditor = () => {
-    router.push("/editor?onboarding=skipped");
+    if (pendingUpgrade) localStorage.removeItem("pendingUpgrade");
+    router.push("/editor");
+  };
+
+  const handleUpgrade = async () => {
+    setStartingPayment(true);
+    const res = await fetch("/api/payment/initialize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ billingCycle: "pro_monthly" }),
+    });
+    const data = await res.json();
+    if (res.ok && data.authorization_url) {
+      window.location.href = data.authorization_url;
+    } else {
+      setStartingPayment(false);
+    }
   };
 
   const completeOnboarding = async () => {
-    const preferences = {
-      useCase,
-      defaultMode,
-      emailTips,
-      emailFeatures,
-      emailProduct,
-    };
-
     try {
       await fetch("/api/user/preferences", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(preferences),
+        body: JSON.stringify({
+          mode: defaultMode,
+          use_case: useCase || null,
+          email_tips: emailTips,
+          email_features: emailFeatures,
+          email_product: emailProduct,
+        }),
       });
     } catch {
       // Still redirect even if saving fails
@@ -58,42 +105,39 @@ function WelcomePageInner() {
 
   const isPro = userPlan === "pro";
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex items-center justify-center">
+        <div className="spinner" style={{ width: 36, height: 36 }} />
+      </div>
+    );
+  }
+
   return (
     <div className="bg-linear-to-br from-green-50 to-white text-gray-900 font-sans min-h-screen">
       {/* PROGRESS INDICATOR */}
       <div className="fixed top-0 left-0 right-0 bg-white shadow-sm z-50 py-4">
         <div className="max-w-4xl mx-auto px-6">
           <div className="flex items-center justify-between">
-            <Link href="/" className="">
-              <Image
-                src={"/logo/logo_black.svg"}
-                alt="Logo"
-                width={50}
-                height={50}
-                className="w-40"
-              />
+            <Link href="/">
+              <Image src={"/logo/logo_black.svg"} alt="Logo" width={50} height={50} className="w-40" />
             </Link>
 
-            {/* Progress Dots */}
-            <div className="flex items-center gap-3">
-              <div
-                className={`progress-dot w-3 h-3 rounded-full transition-all duration-300 ${
-                  currentStep >= 1 ? "bg-primary scale-110" : "bg-gray-200"
-                }`}
-              />
-              <div className="w-8 h-0.5 bg-gray-200" />
-              <div
-                className={`progress-dot w-3 h-3 rounded-full transition-all duration-300 ${
-                  currentStep >= 2 ? "bg-primary scale-110" : "bg-gray-200"
-                }`}
-              />
-              <div className="w-8 h-0.5 bg-gray-200" />
-              <div
-                className={`progress-dot w-3 h-3 rounded-full transition-all duration-300 ${
-                  currentStep >= 3 ? "bg-primary scale-110" : "bg-gray-200"
-                }`}
-              />
-            </div>
+            {/* Progress Dots — only for steps 1-3 */}
+            {currentStep >= 1 && (
+              <div className="flex items-center gap-3">
+                {[1, 2, 3].map((step, i) => (
+                  <div key={step} className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full transition-all duration-300 ${currentStep >= step ? "bg-primary scale-110" : "bg-gray-200"}`} />
+                    {i < 2 && <div className="w-8 h-0.5 bg-gray-200" />}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {currentStep === 0 && (
+              <span className="text-sm font-semibold text-gray-500">Pro Setup</span>
+            )}
 
             <button
               onClick={skipToEditor}
@@ -108,6 +152,72 @@ function WelcomePageInner() {
       {/* MAIN CONTENT */}
       <div className="pt-24 pb-12">
         <div className="max-w-4xl mx-auto px-6">
+
+          {/* STEP 0: PRO PAYMENT */}
+          {currentStep === 0 && (
+            <div className="fade-in max-w-xl mx-auto">
+              <div className="text-center mb-8">
+                <div className="inline-block bg-green-100 text-green-800 px-6 py-3 rounded-full font-bold mb-4 text-lg">
+                  One Last Step
+                </div>
+                <h1 className="text-3xl md:text-4xl font-bold mb-3">Complete Your Pro Setup</h1>
+                <p className="text-gray-600 text-lg">
+                  Your account is ready. Activate Pro to unlock unlimited checks and document storage.
+                </p>
+              </div>
+
+              <div className="bg-white rounded-2xl border-2 border-primary p-8 shadow-lg mb-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <div className="text-sm text-gray-500 font-medium">Pro Plan</div>
+                    <div className="text-3xl font-bold text-primary">
+                      ₦1,500<span className="text-lg text-gray-500 font-normal">/month</span>
+                    </div>
+                  </div>
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                </div>
+
+                <ul className="space-y-3 mb-8">
+                  {[
+                    "Unlimited grammar checks",
+                    "Document storage (up to 100 docs)",
+                    "Export to PDF, DOCX, TXT",
+                    "Advanced Pidgin support",
+                    "Priority support",
+                  ].map((item) => (
+                    <li key={item} className="flex items-center gap-3 text-sm text-gray-700">
+                      <svg className="w-5 h-5 text-green-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  onClick={handleUpgrade}
+                  disabled={startingPayment}
+                  className="w-full bg-primary text-white py-4 rounded-lg font-bold text-lg hover:bg-primaryHover transition cursor-pointer disabled:opacity-50 shadow-lg"
+                >
+                  {startingPayment ? "Redirecting to payment..." : "Activate Pro — ₦1,500/month"}
+                </button>
+              </div>
+
+              <div className="text-center">
+                <button
+                  onClick={() => { localStorage.removeItem("pendingUpgrade"); setPendingUpgrade(false); setCurrentStep(1); }}
+                  className="text-sm text-gray-500 hover:text-gray-700 cursor-pointer transition"
+                >
+                  Continue with Free plan instead
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* STEP 1: WELCOME */}
           {currentStep === 1 && (
             <div className="text-center fade-in">
@@ -121,7 +231,7 @@ function WelcomePageInner() {
 
               <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto slide-in-right delay-200">
                 {isPro
-                  ? "You've started your 7-day Pro trial. Experience unlimited checks, document storage, and advanced features — all for just ₦1,500/month after trial."
+                  ? "Your Pro account is active. Enjoy unlimited checks, document storage, and advanced features."
                   : "You're ready to start checking your grammar. Get 100 free checks per month, with support for Nigerian English and Pidgin."}
               </p>
 
@@ -129,25 +239,15 @@ function WelcomePageInner() {
               <div className="inline-block mb-12 fade-in delay-300">
                 {isPro ? (
                   <div className="bg-linear-to-r from-green-500 to-green-600 text-white px-8 py-4 rounded-xl shadow-lg">
-                    <div className="text-sm font-semibold opacity-90">
-                      Your Plan
-                    </div>
-                    <div className="text-2xl font-bold">Pro Trial</div>
-                    <div className="text-sm opacity-90">
-                      7 days free, then ₦1,500/month
-                    </div>
+                    <div className="text-sm font-semibold opacity-90">Your Plan</div>
+                    <div className="text-2xl font-bold">Pro</div>
+                    <div className="text-sm opacity-90">₦1,500/month</div>
                   </div>
                 ) : (
                   <div className="bg-gray-100 border-2 border-gray-300 px-8 py-4 rounded-xl">
-                    <div className="text-sm font-semibold text-gray-600">
-                      Your Plan
-                    </div>
-                    <div className="text-2xl font-bold text-gray-900">
-                      Free
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      100 checks/month
-                    </div>
+                    <div className="text-sm font-semibold text-gray-600">Your Plan</div>
+                    <div className="text-2xl font-bold text-gray-900">Free</div>
+                    <div className="text-sm text-gray-600">100 checks/month</div>
                   </div>
                 )}
               </div>
@@ -157,25 +257,17 @@ function WelcomePageInner() {
                 <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-gray-100 fade-in delay-100">
                   <div className="text-4xl mb-3">🇳🇬</div>
                   <h3 className="font-bold mb-2">Nigerian English</h3>
-                  <p className="text-sm text-gray-600">
-                    Understands local expressions
-                  </p>
+                  <p className="text-sm text-gray-600">Understands local expressions</p>
                 </div>
-
                 <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-gray-100 fade-in delay-200">
                   <div className="text-4xl mb-3">🗣</div>
                   <h3 className="font-bold mb-2">Pidgin Support</h3>
-                  <p className="text-sm text-gray-600">
-                    First grammar checker for Pidgin
-                  </p>
+                  <p className="text-sm text-gray-600">First grammar checker for Pidgin</p>
                 </div>
-
                 <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-gray-100 fade-in delay-300">
                   <div className="text-4xl mb-3">⚡</div>
                   <h3 className="font-bold mb-2">Works Offline</h3>
-                  <p className="text-sm text-gray-600">
-                    Fast, private, local checking
-                  </p>
+                  <p className="text-sm text-gray-600">Fast, private, local checking</p>
                 </div>
               </div>
 
@@ -192,77 +284,41 @@ function WelcomePageInner() {
           {currentStep === 2 && (
             <div className="fade-in">
               <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                  How It Works
-                </h2>
-                <p className="text-lg text-gray-600">
-                  234Grammar is simple. Here&apos;s what you need to know:
-                </p>
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">How It Works</h2>
+                <p className="text-lg text-gray-600">234Grammar is simple. Here&apos;s what you need to know:</p>
               </div>
 
               <div className="space-y-8 max-w-3xl mx-auto">
-                {/* Tutorial Step 1 */}
                 <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-gray-100 slide-in-left">
                   <div className="flex items-start gap-6">
-                    <div className="shrink-0 w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center font-bold text-xl">
-                      1
-                    </div>
+                    <div className="shrink-0 w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center font-bold text-xl">1</div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold mb-3">
-                        Choose Your Language Mode
-                      </h3>
-                      <p className="text-gray-600 mb-4">
-                        Switch between Nigerian English, Standard English, or
-                        Pidgin depending on your writing context.
-                      </p>
+                      <h3 className="text-xl font-bold mb-3">Choose Your Language Mode</h3>
+                      <p className="text-gray-600 mb-4">Switch between Nigerian English, Standard English, or Pidgin depending on your writing context.</p>
                       <div className="bg-gray-50 rounded-lg p-4 border-2 border-gray-200">
                         <div className="flex gap-3 flex-wrap">
-                          <div className="px-4 py-2 bg-green-100 text-green-800 rounded-lg font-semibold text-sm">
-                            🇳🇬 Nigerian English
-                          </div>
-                          <div className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg font-semibold text-sm">
-                            🇬🇧 Standard English
-                          </div>
-                          <div className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg font-semibold text-sm">
-                            🗣 Pidgin
-                          </div>
+                          <div className="px-4 py-2 bg-green-100 text-green-800 rounded-lg font-semibold text-sm">🇳🇬 Nigerian English</div>
+                          <div className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg font-semibold text-sm">🇬🇧 Standard English</div>
+                          <div className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg font-semibold text-sm">🗣 Pidgin</div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Tutorial Step 2 */}
                 <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-gray-100 slide-in-right delay-100">
                   <div className="flex items-start gap-6">
-                    <div className="shrink-0 w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center font-bold text-xl">
-                      2
-                    </div>
+                    <div className="shrink-0 w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center font-bold text-xl">2</div>
                     <div className="flex-1">
                       <h3 className="text-xl font-bold mb-3">Start Writing</h3>
-                      <p className="text-gray-600 mb-4">
-                        Type or paste your text. Grammar checking happens as you
-                        write — instantly and privately.
-                      </p>
+                      <p className="text-gray-600 mb-4">Type or paste your text. Grammar checking happens as you write — instantly and privately.</p>
                       <div className="bg-gray-50 rounded-lg p-4 border-2 border-gray-200 font-mono text-sm">
                         <p className="text-gray-800 mb-2">
-                          I&apos;m{" "}
-                          <span className="underline decoration-purple-500 decoration-2">
-                            coming
-                          </span>{" "}
-                          now o.
+                          I&apos;m <span className="underline decoration-purple-500 decoration-2">coming</span> now o.
                         </p>
                         <div className="text-xs text-purple-600 flex items-center">
-                          <svg
-                            className="w-4 h-4 mr-1"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                              clipRule="evenodd"
-                            />
+                          <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>
                           Correct in Nigerian English
                         </div>
@@ -271,41 +327,23 @@ function WelcomePageInner() {
                   </div>
                 </div>
 
-                {/* Tutorial Step 3 */}
                 <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-gray-100 slide-in-left delay-200">
                   <div className="flex items-start gap-6">
-                    <div className="shrink-0 w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center font-bold text-xl">
-                      3
-                    </div>
+                    <div className="shrink-0 w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center font-bold text-xl">3</div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold mb-3">
-                        Review &amp; Fix
-                      </h3>
-                      <p className="text-gray-600 mb-4">
-                        Click on underlined words to see suggestions. Accept,
-                        ignore, or learn why it&apos;s flagged.
-                      </p>
+                      <h3 className="text-xl font-bold mb-3">Review &amp; Fix</h3>
+                      <p className="text-gray-600 mb-4">Click on underlined words to see suggestions. Accept, ignore, or learn why it&apos;s flagged.</p>
                       <div className="bg-gray-50 rounded-lg p-4 border-2 border-gray-200">
                         <div className="bg-white rounded-lg p-4 shadow-sm border">
                           <div className="flex items-start justify-between">
                             <div>
-                              <div className="text-yellow-600 font-semibold text-sm mb-1">
-                                Grammar
-                              </div>
-                              <p className="text-gray-700 mb-2">
-                                Subject-verb agreement issue
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                &quot;He go&quot; → &quot;He goes&quot;
-                              </p>
+                              <div className="text-yellow-600 font-semibold text-sm mb-1">Grammar</div>
+                              <p className="text-gray-700 mb-2">Subject-verb agreement issue</p>
+                              <p className="text-sm text-gray-600">&quot;He go&quot; → &quot;He goes&quot;</p>
                             </div>
                             <div className="flex gap-2">
-                              <button className="px-3 py-1 bg-primary cursor-pointer text-white text-sm rounded hover:bg-primaryHover transition">
-                                Fix
-                              </button>
-                              <button className="px-3 py-1 border text-sm cursor-pointer rounded hover:bg-gray-50 transition">
-                                Ignore
-                              </button>
+                              <button className="px-3 py-1 bg-primary cursor-pointer text-white text-sm rounded hover:bg-primaryHover transition">Fix</button>
+                              <button className="px-3 py-1 border text-sm cursor-pointer rounded hover:bg-gray-50 transition">Ignore</button>
                             </div>
                           </div>
                         </div>
@@ -330,70 +368,31 @@ function WelcomePageInner() {
           {currentStep === 3 && (
             <div className="fade-in">
               <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                  Personalize Your Experience
-                </h2>
-                <p className="text-lg text-gray-600">
-                  Help us tailor 234Grammar to your needs (optional)
-                </p>
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Personalize Your Experience</h2>
+                <p className="text-lg text-gray-600">Help us tailor 234Grammar to your needs (optional)</p>
               </div>
 
               <div className="max-w-2xl mx-auto">
                 <div className="space-y-6">
                   {/* Primary Use Case */}
                   <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-gray-100">
-                    <label className="block font-bold mb-4 text-lg">
-                      What will you use 234Grammar for?
-                    </label>
+                    <label className="block font-bold mb-4 text-lg">What will you use 234Grammar for?</label>
                     <div className="space-y-3">
                       {[
-                        {
-                          value: "student",
-                          label: "🎓 Student",
-                          desc: "Essays, assignments, JAMB/WAEC prep",
-                        },
-                        {
-                          value: "content-creator",
-                          label: "✍️ Content Creator",
-                          desc: "Blogs, scripts, social media posts",
-                        },
-                        {
-                          value: "professional",
-                          label: "💼 Professional",
-                          desc: "Business emails, reports, proposals",
-                        },
-                        {
-                          value: "freelancer",
-                          label: "🌍 Freelancer",
-                          desc: "Client work, proposals, contracts",
-                        },
-                        {
-                          value: "other",
-                          label: "📝 Other",
-                          desc: "Just exploring",
-                        },
+                        { value: "student", label: "🎓 Student", desc: "Essays, assignments, JAMB/WAEC prep" },
+                        { value: "content-creator", label: "✍️ Content Creator", desc: "Blogs, scripts, social media posts" },
+                        { value: "professional", label: "💼 Professional", desc: "Business emails, reports, proposals" },
+                        { value: "freelancer", label: "🌍 Freelancer", desc: "Client work, proposals, contracts" },
+                        { value: "other", label: "📝 Other", desc: "Just exploring" },
                       ].map((opt) => (
                         <label
                           key={opt.value}
-                          className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition ${
-                            useCase === opt.value
-                              ? "border-primary bg-green-50"
-                              : "border-gray-200 hover:border-primary"
-                          }`}
+                          className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition ${useCase === opt.value ? "border-primary bg-green-50" : "border-gray-200 hover:border-primary"}`}
                         >
-                          <input
-                            type="radio"
-                            name="useCase"
-                            value={opt.value}
-                            checked={useCase === opt.value}
-                            onChange={() => setUseCase(opt.value)}
-                            className="w-4 h-4 accent-primary"
-                          />
+                          <input type="radio" name="useCase" value={opt.value} checked={useCase === opt.value} onChange={() => setUseCase(opt.value)} className="w-4 h-4 accent-primary" />
                           <div className="ml-4">
                             <div className="font-semibold">{opt.label}</div>
-                            <div className="text-sm text-gray-600">
-                              {opt.desc}
-                            </div>
+                            <div className="text-sm text-gray-600">{opt.desc}</div>
                           </div>
                         </label>
                       ))}
@@ -402,48 +401,21 @@ function WelcomePageInner() {
 
                   {/* Default Language Mode */}
                   <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-gray-100">
-                    <label className="block font-bold mb-4 text-lg">
-                      Which mode will you use most?
-                    </label>
+                    <label className="block font-bold mb-4 text-lg">Which mode will you use most?</label>
                     <div className="space-y-3">
                       {[
-                        {
-                          value: "nigerian-english",
-                          label: "🇳🇬 Nigerian English",
-                          desc: "Local expressions accepted",
-                        },
-                        {
-                          value: "standard-english",
-                          label: "🇬🇧 Standard English",
-                          desc: "Formal British/American",
-                        },
-                        {
-                          value: "pidgin",
-                          label: "🗣 Pidgin",
-                          desc: "Nigerian Pidgin grammar",
-                        },
+                        { value: "nigerian-english", label: "🇳🇬 Nigerian English", desc: "Local expressions accepted" },
+                        { value: "standard-english", label: "🇬🇧 Standard English", desc: "Formal British/American" },
+                        { value: "pidgin", label: "🗣 Pidgin", desc: "Nigerian Pidgin grammar" },
                       ].map((opt) => (
                         <label
                           key={opt.value}
-                          className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition ${
-                            defaultMode === opt.value
-                              ? "border-primary bg-green-50"
-                              : "border-gray-200 hover:border-primary"
-                          }`}
+                          className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition ${defaultMode === opt.value ? "border-primary bg-green-50" : "border-gray-200 hover:border-primary"}`}
                         >
-                          <input
-                            type="radio"
-                            name="defaultMode"
-                            value={opt.value}
-                            checked={defaultMode === opt.value}
-                            onChange={() => setDefaultMode(opt.value)}
-                            className="w-4 h-4 accent-primary"
-                          />
+                          <input type="radio" name="defaultMode" value={opt.value} checked={defaultMode === opt.value} onChange={() => setDefaultMode(opt.value)} className="w-4 h-4 accent-primary" />
                           <div className="ml-4">
                             <div className="font-semibold">{opt.label}</div>
-                            <div className="text-sm text-gray-600">
-                              {opt.desc}
-                            </div>
+                            <div className="text-sm text-gray-600">{opt.desc}</div>
                           </div>
                         </label>
                       ))}
@@ -453,44 +425,19 @@ function WelcomePageInner() {
                   {/* Email Preferences — Pro only */}
                   {isPro && (
                     <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-gray-100">
-                      <label className="block font-bold mb-4 text-lg">
-                        Email Preferences
-                      </label>
+                      <label className="block font-bold mb-4 text-lg">Email Preferences</label>
                       <div className="space-y-3">
                         <label className="flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={emailTips}
-                            onChange={(e) => setEmailTips(e.target.checked)}
-                            className="w-4 h-4 accent-primary rounded"
-                          />
-                          <span className="ml-3 text-gray-700">
-                            Send me weekly writing tips
-                          </span>
+                          <input type="checkbox" checked={emailTips} onChange={(e) => setEmailTips(e.target.checked)} className="w-4 h-4 accent-primary rounded" />
+                          <span className="ml-3 text-gray-700">Send me weekly writing tips</span>
                         </label>
-
                         <label className="flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={emailFeatures}
-                            onChange={(e) => setEmailFeatures(e.target.checked)}
-                            className="w-4 h-4 accent-primary rounded"
-                          />
-                          <span className="ml-3 text-gray-700">
-                            Notify me about new features
-                          </span>
+                          <input type="checkbox" checked={emailFeatures} onChange={(e) => setEmailFeatures(e.target.checked)} className="w-4 h-4 accent-primary rounded" />
+                          <span className="ml-3 text-gray-700">Notify me about new features</span>
                         </label>
-
                         <label className="flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={emailProduct}
-                            onChange={(e) => setEmailProduct(e.target.checked)}
-                            className="w-4 h-4 accent-primary rounded"
-                          />
-                          <span className="ml-3 text-gray-700">
-                            Product updates and announcements
-                          </span>
+                          <input type="checkbox" checked={emailProduct} onChange={(e) => setEmailProduct(e.target.checked)} className="w-4 h-4 accent-primary rounded" />
+                          <span className="ml-3 text-gray-700">Product updates and announcements</span>
                         </label>
                       </div>
                     </div>
@@ -498,16 +445,10 @@ function WelcomePageInner() {
                 </div>
 
                 <div className="flex gap-4 mt-12">
-                  <button
-                    onClick={skipToEditor}
-                    className="flex-1 border-2 border-gray-300 cursor-pointer text-gray-700 px-6 py-4 rounded-lg text-lg font-bold hover:border-primary hover:text-primary transition"
-                  >
+                  <button onClick={skipToEditor} className="flex-1 border-2 border-gray-300 cursor-pointer text-gray-700 px-6 py-4 rounded-lg text-lg font-bold hover:border-primary hover:text-primary transition">
                     Skip This
                   </button>
-                  <button
-                    onClick={completeOnboarding}
-                    className="flex-1 bg-primary cursor-pointer text-white px-6 py-4 rounded-lg text-lg font-bold hover:bg-primaryHover transition shadow-lg hover:shadow-xl"
-                  >
+                  <button onClick={completeOnboarding} className="flex-1 bg-primary cursor-pointer text-white px-6 py-4 rounded-lg text-lg font-bold hover:bg-primaryHover transition shadow-lg hover:shadow-xl">
                     Start Writing →
                   </button>
                 </div>

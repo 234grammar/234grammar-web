@@ -7,6 +7,7 @@ import { IoIosCheckmarkCircle, IoIosStar } from "react-icons/io";
 import { IoMenu } from "react-icons/io5";
 import { FaXTwitter } from "react-icons/fa6";
 import { ImLinkedin2 } from "react-icons/im";
+import { NavAuthButtons } from "./components/NavAuthButtons";
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -28,14 +29,6 @@ export default function Home() {
     {
       q: "How do I pay?",
       a: "Pay in naira through Paystack using your debit card, bank transfer, or USSD. No virtual dollar cards needed. Cancel anytime with one click.",
-    },
-    {
-      q: "What happens after the 7-day trial?",
-      a: "After 7 days, you'll be charged ₦1,500/month. You can cancel anytime during the trial with no charges. We'll send you a reminder 2 days before the trial ends.",
-    },
-    {
-      q: "Will the price really stay at ₦1,500 forever?",
-      a: "Yes! This is our launch price for early adopters. When we add AI features (rewrites, translation), new users will pay ₦3,500/month — but you'll keep ₦1,500/month as long as you stay subscribed.",
     },
     {
       q: "Is my writing data private?",
@@ -85,18 +78,7 @@ export default function Home() {
             >
               FAQ
             </a>
-            <Link
-              href="/login"
-              className="text-gray-600 hover:text-primary transition"
-            >
-              Login
-            </Link>
-            <Link
-              href="/signup"
-              className="bg-primary text-white px-5 py-2.5 rounded-lg hover:bg-primaryHover transition font-semibold"
-            >
-              Start Free
-            </Link>
+            <NavAuthButtons />
           </div>
         </div>
 
@@ -121,18 +103,7 @@ export default function Home() {
             >
               FAQ
             </a>
-            <Link
-              href="/login"
-              className="block py-3 text-gray-600 hover:text-primary"
-            >
-              Login
-            </Link>
-            <Link
-              href="/signup"
-              className="block mt-3 bg-primary text-white px-5 py-3 rounded-lg text-center font-semibold hover:bg-primaryHover transition"
-            >
-              Start Free
-            </Link>
+            <NavAuthButtons mobile />
           </div>
         )}
       </nav>
@@ -154,7 +125,7 @@ export default function Home() {
                 href="/signup"
                 className="bg-primary text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primaryHover transition text-center shadow-lg hover:shadow-xl"
               >
-                Start Free — No Login Required
+                Get Started Free
               </Link>
               <a
                 href="#features"
@@ -164,7 +135,7 @@ export default function Home() {
               </a>
             </div>
             <div className="flex flex-wrap gap-6 text-sm text-gray-600">
-              {["100% Offline", "Pay in Naira"].map((item) => (
+              {["Pay in Naira"].map((item) => (
                 <div key={item} className="flex items-center">
                   <IoIosCheckmarkCircle className="w-5 h-5 text-green-600 mr-2" />
                   <span>{item}</span>
@@ -269,13 +240,18 @@ export default function Home() {
       {/* TRUST BAR */}
       <section className="bg-white py-8 border-y">
         <div className="max-w-6xl mx-auto px-6">
-          <p className="text-center text-gray-500 text-sm mb-6">
-            Trusted by Nigerian writers and students
-          </p>
-          <div className="flex flex-wrap justify-center gap-8 md:gap-16 items-center opacity-40">
-            <span className="font-semibold text-lg">
-              Students • Writers • Professionals
-            </span>
+          <div className="flex flex-wrap justify-center gap-8 md:gap-16 items-center text-center">
+            {[
+              { value: "100", label: "Free checks/month" },
+              { value: "₦1,500", label: "Pro plan" },
+              { value: "3", label: "Language modes" },
+              { value: "🇳🇬", label: "Built for Nigeria" },
+            ].map((stat) => (
+              <div key={stat.label}>
+                <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
+                <div className="text-sm text-gray-500 mt-0.5">{stat.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -292,7 +268,7 @@ export default function Home() {
               were.
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 gap-8">
             {[
               {
                 icon: "💳",
@@ -373,7 +349,7 @@ export default function Home() {
           <h3 className="text-3xl md:text-4xl font-bold text-center mb-12">
             What Makes 234Grammar Different
           </h3>
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-linear-to-br from-green-50 to-white border-2 border-green-200 rounded-2xl p-8 hover:shadow-xl transition">
               <h4 className="text-2xl font-bold mb-4 text-green-900 flex items-center">
                 <span className="text-3xl mr-3">🇳🇬</span>Built for Nigerian
@@ -642,13 +618,8 @@ export default function Home() {
               Early Adopter Benefits
             </h3>
           </div>
-          <div className="grid md:grid-cols-3 gap-8 mb-12">
+          <div className="grid md:grid-cols-2 gap-8 mb-12">
             {[
-              // {
-              //   icon: "🔒",
-              //   title: "Lock In ₦1,500/Month",
-              //   desc: "Your rate never increases, even when we add AI features and raise prices to ₦3,500/month",
-              // },
               {
                 icon: "🚀",
                 title: "First Access to New Features",
@@ -728,9 +699,7 @@ export default function Home() {
                     /month
                   </span>
                 </p>
-                <p className="text-sm text-gray-500">
-                  ₦15,000/year (save ₦3,000)
-                </p>
+                <p className="text-sm text-gray-500">Billed monthly</p>
               </div>
 
               <ul className="space-y-3 mb-8">
@@ -762,10 +731,10 @@ export default function Home() {
                 href="/signup"
                 className="block w-full text-center bg-primary text-white py-4 rounded-lg hover:bg-primaryHover transition font-bold mb-3 shadow-lg hover:shadow-xl"
               >
-                Start 7-Day Free Trial
+                Upgrade to Pro — ₦1,500/month
               </Link>
               <p className="text-xs text-center text-gray-500 mb-4">
-                No credit card required • Cancel anytime
+                Cancel anytime
               </p>
               <div className="pt-4 border-t border-gray-200">
                 <p className="text-sm text-gray-600 text-center flex items-center justify-center gap-2">
@@ -798,7 +767,7 @@ export default function Home() {
                     Coming Soon to Pro
                   </h4>
                   <p className="text-blue-800 mb-6 text-lg">
-                    For ₦3,500/month,
+                    These features are coming soon for Pro subscribers:
                   </p>
                   <div className="grid md:grid-cols-3 gap-4">
                     {[
@@ -908,7 +877,7 @@ export default function Home() {
             </a>
           </div>
           <p className="text-sm opacity-75">
-            ✓ 7-day free trial • ✓ No credit card needed • ✓ Cancel anytime
+            ✓ Free plan available • ✓ Pay in Naira • ✓ Cancel anytime
           </p>
         </div>
       </section>
@@ -964,19 +933,14 @@ export default function Home() {
                   </Link>
                 </li>
                 <li>
-                  <a href="/blog" className="hover:text-white transition">
-                    Blog
-                  </a>
-                </li>
-                <li>
-                  <a href="/privacy" className="hover:text-white transition">
+                  <Link href="/privacy" className="hover:text-white transition">
                     Privacy
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="/terms" className="hover:text-white transition">
+                  <Link href="/terms" className="hover:text-white transition">
                     Terms
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>

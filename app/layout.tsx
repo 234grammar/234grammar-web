@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { geistSans } from "./fonts";
+import { Toaster } from "sonner";
 
 
 
@@ -29,12 +29,14 @@ export const metadata: Metadata = {
     siteName: "234Grammar",
     locale: "en_NG",
     type: "website",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "234Grammar – Built for Nigerian English" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "234Grammar – Built for African English",
     description:
       "A grammar checker designed for Nigerian & African writers.",
+    images: ["/og-image.png"],
   },
 };
 
@@ -49,6 +51,7 @@ export default function RootLayout({
         className={`${geistSans.variable} antialiased min-h-screen text-slate-900`}
       >
         {children}
+        <Toaster position="top-right" richColors />
       </body>
     </html>
   );

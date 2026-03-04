@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FaXTwitter } from "react-icons/fa6";
+import { NavAuthButtons } from "../components/NavAuthButtons";
 
 const CheckCircleGreen = () => (
   <svg
@@ -92,18 +93,7 @@ export default function AboutPage() {
             >
               About
             </Link>
-            <Link
-              href="/login"
-              className="text-gray-600 hover:text-primary transition"
-            >
-              Login
-            </Link>
-            <Link
-              href="/signup"
-              className="bg-primary text-white px-5 py-2.5 rounded-lg hover:bg-primaryHover transition font-semibold"
-            >
-              Start Free
-            </Link>
+            <NavAuthButtons />
           </div>
         </div>
       </nav>
@@ -702,7 +692,7 @@ export default function AboutPage() {
             </a>
 
             <Link
-              href="/feedback"
+              href="/contact"
               className="bg-gray-50 hover:bg-gray-100 rounded-2xl p-8 border-2 border-gray-100 hover:border-primary transition group"
             >
               <svg
@@ -812,11 +802,6 @@ export default function AboutPage() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/blog" className="hover:text-white transition">
-                    Blog
-                  </Link>
-                </li>
-                <li>
                   <Link href="/privacy" className="hover:text-white transition">
                     Privacy
                   </Link>
@@ -860,7 +845,7 @@ export default function AboutPage() {
             </p>
             <div className="flex gap-6">
               <a
-                href="https://x.comammar"
+                href="https://x.com/234grammar"
                 className="hover:text-white transition"
                 aria-label="Twitter"
               >

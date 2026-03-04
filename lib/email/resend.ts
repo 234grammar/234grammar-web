@@ -1,7 +1,8 @@
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = process.env.RESEND_FROM_EMAIL || 'noreply@234grammar.com';
+const FROM = process.env.RESEND_FROM_EMAIL || 'noreply@send.234grammar.com';
+const TO = 'hello@234grammar.com';
 
 function baseTemplate(body: string) {
   return `<!DOCTYPE html>
@@ -42,19 +43,15 @@ export async function sendWelcomeEmail({
   email: string;
   plan: string;
 }) {
-  const isPro = plan === 'pro_trial' || plan === 'pro';
+  const isPro = plan === 'pro';
   const body = `
     <h1 style="margin:0 0 8px;font-size:24px;color:#111827">Welcome to 234Grammar!</h1>
     <p style="margin:0 0 24px;color:#6b7280;font-size:16px">
-      Thanks for signing up. ${isPro ? 'Your 7-day Pro trial starts the moment you verify your email.' : 'You&apos;re on the Free plan — 100 checks per month, no credit card needed.'}
+      Thanks for signing up. ${isPro ? 'Your Pro plan is now active — enjoy unlimited checks and all premium features.' : 'You&apos;re on the Free plan — 100 checks per month, no credit card needed.'}
     </p>
     <p style="margin:0 0 24px;color:#374151;font-size:15px">
       Click the verification link in the email Supabase sent you to activate your account and start writing better Nigerian English.
     </p>
-    ${isPro ? `
-    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;margin-bottom:24px">
-      <p style="margin:0;font-size:14px;color:#166534"><strong>Pro Trial:</strong> 7 days free, then &#8358;1,500/month. You won't be charged until your trial ends.</p>
-    </div>` : ''}
     <a href="${process.env.NEXT_PUBLIC_APP_URL}/editor" style="display:inline-block;background:#008751;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">Open Editor →</a>
   `;
 
@@ -90,7 +87,8 @@ export async function sendContactNotification(data: {
 
   await resend.emails.send({
     from: FROM,
-    to: FROM,
+    // to: FROM,
+    to: TO,
     replyTo: data.email,
     subject: `Contact: ${data.subject || 'New message'} — ${data.email}`,
     html: baseTemplate(body),

@@ -3,12 +3,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [email, setEmail] = useState('');
@@ -23,14 +22,13 @@ export default function LoginPage() {
       setRemember(true);
     }
     const params = new URLSearchParams(window.location.search);
-    if (params.get('from') === 'signup') setSuccessMsg('Account created! Please login to continue.');
-    if (params.get('expired') === 'true') setErrorMsg('Your session has expired. Please login again.');
-    if (params.get('verified') === 'true') setSuccessMsg('Email verified! You can now login.');
+    if (params.get('from') === 'signup') toast.success('Account created! Please login to continue.');
+    if (params.get('expired') === 'true') toast.error('Your session has expired. Please login again.');
+    if (params.get('verified') === 'true') toast.success('Email verified! You can now login.');
   }, []);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    setErrorMsg('');
     setLoginLoading(true);
 
     if (remember) {
@@ -47,14 +45,16 @@ export default function LoginPage() {
       });
       if (response.ok) {
         const params = new URLSearchParams(window.location.search);
-        window.location.href = params.get('redirect') || '/editor';
+        const redirect = params.get('redirect');
+        const allowed = ['/editor', '/settings', '/welcome'];
+        window.location.href = (redirect && allowed.includes(redirect)) ? redirect : '/editor';
       } else {
         const error = await response.json();
-        setErrorMsg(error.message || 'Invalid email or password. Please try again.');
+        toast.error(error.message || 'Invalid email or password. Please try again.');
         setLoginLoading(false);
       }
     } catch {
-      setErrorMsg('Something went wrong. Please try again.');
+      toast.error('Something went wrong. Please try again.');
       setLoginLoading(false);
     }
   }
@@ -71,14 +71,13 @@ export default function LoginPage() {
       if (response.ok) {
         setShowForgotModal(false);
         setResetEmail('');
-        setSuccessMsg('Check your email for a password reset link');
-        setTimeout(() => setSuccessMsg(''), 5000);
+        toast.success('Check your email for a password reset link');
       } else {
         const error = await response.json();
-        alert(error.message || 'Failed to send reset link. Please try again.');
+        toast.error(error.message || 'Failed to send reset link. Please try again.');
       }
     } catch {
-      alert('Something went wrong. Please try again.');
+      toast.error('Something went wrong. Please try again.');
     }
     setResetLoading(false);
   }
@@ -117,34 +116,6 @@ export default function LoginPage() {
                   <h1 className="text-3xl md:text-4xl font-bold mb-3">Welcome Back!</h1>
                   <p className="text-gray-600">Login to continue writing better Nigerian English</p>
                 </div>
-
-                {errorMsg && (
-                  <div className="mb-6 bg-red-50 border-2 border-red-200 rounded-lg p-4">
-                    <div className="flex items-start">
-                      <svg className="w-5 h-5 text-red-600 mr-2 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                      </svg>
-                      <div>
-                        <p className="font-semibold text-red-800">Login Failed</p>
-                        <p className="text-sm text-red-700 mt-1">{errorMsg}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {successMsg && (
-                  <div className="mb-6 bg-green-50 border-2 border-green-200 rounded-lg p-4">
-                    <div className="flex items-start">
-                      <svg className="w-5 h-5 text-green-600 mr-2 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <div>
-                        <p className="font-semibold text-green-800">Check Your Email</p>
-                        <p className="text-sm text-green-700 mt-1">{successMsg}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 <form onSubmit={handleLogin} className="space-y-5">
                   <div>
