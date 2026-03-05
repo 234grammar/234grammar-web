@@ -176,6 +176,7 @@ function EditorPageInner() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showIssuesSheet, setShowIssuesSheet] = useState(false);
   const [warningChecks, setWarningChecks] = useState(80);
   const [resetDays, setResetDays] = useState(12);
 
@@ -1007,44 +1008,26 @@ function EditorPageInner() {
           {/* Toolbar */}
           <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shrink-0">
             {/* Left: Stats */}
-            <div className="flex items-center gap-6 text-sm">
+            <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-2">
-                <svg
-                  className="w-4 h-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <span className="text-gray-600">
-                  {wordCount} {wordCount !== 1 ? "words" : "word"}
-                </span>
+                <span className="text-gray-600">{wordCount} {wordCount !== 1 ? "words" : "word"}</span>
               </div>
 
-              <div className="flex items-center gap-2">
-                <svg
-                  className="w-4 h-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
+              <div className="hidden md:flex items-center gap-2">
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span className="text-gray-600">{readingTime} min read</span>
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* Issues count — tappable on mobile to open sheet */}
+              <button
+                className="flex items-center gap-2 md:cursor-default"
+                onClick={() => { if (window.innerWidth < 768) setShowIssuesSheet(true); }}
+              >
                 {errorIssues.length === 0 ? (
                   <>
                     <span className="w-2 h-2 bg-green-500 rounded-full" />
@@ -1054,12 +1037,11 @@ function EditorPageInner() {
                   <>
                     <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                     <span className="text-red-600 font-semibold">
-                      {errorIssues.length}{" "}
-                      {errorIssues.length !== 1 ? "issues" : "issue"}
+                      {errorIssues.length} {errorIssues.length !== 1 ? "issues" : "issue"}
                     </span>
                   </>
                 )}
-              </div>
+              </button>
             </div>
 
             {/* Right: Actions */}
@@ -1286,9 +1268,9 @@ function EditorPageInner() {
             </aside>
           </div>
 
-          {/* Bottom Bar: Usage (Free plan) */}
+          {/* Bottom Bar: Usage (Free plan, desktop only) */}
           {!isPro && (
-            <div className="bg-white border-t border-gray-200 px-6 py-3 flex items-center justify-between shrink-0">
+            <div className="hidden md:flex bg-white border-t border-gray-200 px-6 py-3 items-center justify-between shrink-0">
               <div className="flex items-center gap-4">
                 <div className="text-sm">
                   <span className="font-semibold">{checksUsed}</span>
@@ -1315,54 +1297,151 @@ function EditorPageInner() {
       </div>
 
       {/* MOBILE BOTTOM ACTION BAR */}
-      <div className="md:hidden shrink-0 bg-white border-t border-gray-200 px-4 py-3 flex items-center gap-3 z-40">
-        {/* Doc title + save status */}
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold truncate text-gray-800">{documentTitle}</p>
-          <p className={`text-xs ${saveStatusColor}`}>{saveStatus}</p>
-        </div>
+      <div className="md:hidden shrink-0 bg-white border-t border-gray-200 z-40">
+        {/* Free usage bar */}
+        {!isPro && (
+          <div className="px-4 pt-2.5 pb-0 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <span><span className="font-semibold text-gray-800">{checksUsed}</span> / 100 checks</span>
+              <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                <div className={`h-full ${usageBarColor} transition-all`} style={{ width: `${usagePercent}%` }} />
+              </div>
+            </div>
+            <button onClick={() => setShowUpgradeModal(true)} className="text-xs text-primary font-semibold cursor-pointer hover:underline shrink-0">
+              Upgrade →
+            </button>
+          </div>
+        )}
 
-        {/* Export */}
-        <div className="relative" data-export-menu>
+        <div className="px-4 py-3 flex items-center gap-3">
+          {/* Issues button */}
           <button
-            onClick={isPro ? () => setShowExportMenu(!showExportMenu) : () => setShowUpgradeModal(true)}
-            className={`flex items-center gap-1.5 px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold hover:bg-gray-50 transition cursor-pointer ${!isPro ? 'opacity-50' : ''}`}
-            data-export-menu
+            onClick={() => setShowIssuesSheet(true)}
+            className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold hover:bg-gray-50 transition cursor-pointer relative"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" data-export-menu>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" data-export-menu />
+            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
-            Export
+            Issues
+            {errorIssues.length > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                {errorIssues.length > 9 ? '9+' : errorIssues.length}
+              </span>
+            )}
           </button>
-          {showExportMenu && isPro && (
-            <div className="absolute bottom-full right-0 mb-2 w-44 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50" data-export-menu>
-              <button onClick={exportAsTxt} className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 cursor-pointer transition" data-export-menu>
-                <div className="font-semibold">TXT</div>
-                <div className="text-xs text-gray-500">Plain text file</div>
-              </button>
-              <button onClick={exportAsPdf} className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 cursor-pointer transition" data-export-menu>
-                <div className="font-semibold">PDF</div>
-                <div className="text-xs text-gray-500">Portable document</div>
-              </button>
-              <button onClick={exportAsDocx} className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 cursor-pointer transition" data-export-menu>
-                <div className="font-semibold">DOCX</div>
-                <div className="text-xs text-gray-500">Word document</div>
+
+          {/* Doc title + save status */}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold truncate text-gray-800">{documentTitle}</p>
+            <p className={`text-xs ${saveStatusColor}`}>{saveStatus}</p>
+          </div>
+
+          {/* Export */}
+          <div className="relative" data-export-menu>
+            <button
+              onClick={isPro ? () => setShowExportMenu(!showExportMenu) : () => setShowUpgradeModal(true)}
+              className={`flex items-center gap-1.5 px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold hover:bg-gray-50 transition cursor-pointer ${!isPro ? 'opacity-50' : ''}`}
+              data-export-menu
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" data-export-menu>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" data-export-menu />
+              </svg>
+              Export
+            </button>
+            {showExportMenu && isPro && (
+              <div className="absolute bottom-full right-0 mb-2 w-44 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50" data-export-menu>
+                <button onClick={exportAsTxt} className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 cursor-pointer transition" data-export-menu>
+                  <div className="font-semibold">TXT</div>
+                  <div className="text-xs text-gray-500">Plain text file</div>
+                </button>
+                <button onClick={exportAsPdf} className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 cursor-pointer transition" data-export-menu>
+                  <div className="font-semibold">PDF</div>
+                  <div className="text-xs text-gray-500">Portable document</div>
+                </button>
+                <button onClick={exportAsDocx} className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 cursor-pointer transition" data-export-menu>
+                  <div className="font-semibold">DOCX</div>
+                  <div className="text-xs text-gray-500">Word document</div>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Save */}
+          <button
+            onClick={isPro ? handleSave : () => setShowUpgradeModal(true)}
+            className={`flex items-center gap-1.5 px-3 py-2 bg-primary text-white rounded-lg cursor-pointer hover:bg-primaryHover transition text-sm font-semibold ${!isPro ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+            </svg>
+            Save
+          </button>
+        </div>
+      </div>
+
+      {/* MOBILE ISSUES BOTTOM SHEET */}
+      {showIssuesSheet && (
+        <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowIssuesSheet(false)} />
+          {/* Sheet */}
+          <div className="relative bg-white rounded-t-2xl max-h-[75vh] flex flex-col shadow-2xl">
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-1 shrink-0">
+              <div className="w-10 h-1 bg-gray-300 rounded-full" />
+            </div>
+            {/* Header */}
+            <div className="px-4 py-3 flex items-center justify-between border-b shrink-0">
+              <h3 className="font-bold text-lg">
+                Issues {errorIssues.length > 0 && <span className="text-red-500">({errorIssues.length})</span>}
+              </h3>
+              <button onClick={() => setShowIssuesSheet(false)} className="p-2 hover:bg-gray-100 rounded-full transition cursor-pointer">
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
-          )}
+            {/* Issues list */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {issues.length === 0 ? (
+                <div className="text-center py-10">
+                  <svg className="w-14 h-14 mx-auto mb-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-gray-600 font-semibold">Looking good!</p>
+                  <p className="text-sm text-gray-500 mt-1">No grammar issues found</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {issues.map((issue, index) => {
+                    const colors = getIssueColors(issue.type);
+                    return (
+                      <div key={index} className={`border-2 ${colors.border} rounded-lg p-4`}>
+                        <div className="flex items-start justify-between mb-2">
+                          <div className={`font-semibold ${colors.text} text-sm uppercase`}>{issue.type}</div>
+                          {issue.isCorrect && (
+                            <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                        <p className="text-gray-700 font-mono text-sm mb-2">&quot;{issue.text}&quot;</p>
+                        <p className="text-sm text-gray-600">{issue.message}</p>
+                        {!issue.isCorrect && issue.suggestion && (
+                          <div className="mt-3 pt-3 border-t">
+                            <div className="text-xs text-gray-500 mb-1">Suggestion:</div>
+                            <div className="font-semibold text-gray-900">{issue.suggestion}</div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-
-        {/* Save */}
-        <button
-          onClick={isPro ? handleSave : () => setShowUpgradeModal(true)}
-          className={`flex items-center gap-1.5 px-3 py-2 bg-primary text-white rounded-lg cursor-pointer hover:bg-primaryHover transition text-sm font-semibold ${!isPro ? 'opacity-50 cursor-not-allowed' : ''}`}
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-          </svg>
-          Save
-        </button>
-      </div>
+      )}
 
       {/* UPGRADE MODAL */}
       {showUpgradeModal && (
