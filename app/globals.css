@@ -7,14 +7,18 @@
   --color-primaryHover: #006B40;
   --color-gold: #FCD12A;
   --color-goldLight: #FEF3CD;
+  --color-cream: #F5F0E6;
+  --color-ink: #0C1A0E;
+  --color-deepGreen: #112A14;
   --font-sans: var(--font-geist-sans);
   --font-ibm: var(--font-ibm-plex-sans);
+  --font-display: var(--font-instrument-serif);
 }
 
 
 body {
-  background: #F8FAFC;
-  color: #0F172A;
+  background: #F5F0E6;
+  color: #0C1A0E;
   font-family: var(--font-sans);
 }
 
@@ -101,3 +105,70 @@ html {
 
 /* Tooltip positioning */
 .tooltip { position: absolute; z-index: 1000; }
+
+/* ── Scroll Reveal ── */
+[data-reveal] {
+  opacity: 0;
+  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-reveal="up"]    { transform: translateY(32px); }
+[data-reveal="left"]  { transform: translateX(-28px); }
+[data-reveal="right"] { transform: translateX(28px); }
+[data-reveal="scale"] { transform: scale(0.94) translateY(20px); }
+[data-reveal].revealed { opacity: 1; transform: none; }
+
+[data-delay="1"] { transition-delay: 0.08s; }
+[data-delay="2"] { transition-delay: 0.16s; }
+[data-delay="3"] { transition-delay: 0.24s; }
+[data-delay="4"] { transition-delay: 0.32s; }
+[data-delay="5"] { transition-delay: 0.40s; }
+[data-delay="6"] { transition-delay: 0.48s; }
+[data-delay="7"] { transition-delay: 0.56s; }
+[data-delay="8"] { transition-delay: 0.64s; }
+
+/* ── Hero entrance (fires on load, no JS) ── */
+.hero-line {
+  display: block;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: heroLineIn 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.hero-line-1 { animation-delay: 0.05s; }
+.hero-line-2 { animation-delay: 0.18s; }
+
+.hero-fade {
+  opacity: 0;
+  animation: heroFadeIn 0.65s ease-out forwards;
+}
+.hero-fade-1 { animation-delay: 0.35s; }
+.hero-fade-2 { animation-delay: 0.48s; }
+.hero-fade-3 { animation-delay: 0.60s; }
+
+.hero-card {
+  opacity: 0;
+  transform: translateX(36px);
+  animation: heroCardIn 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: 0.22s;
+}
+
+@keyframes heroLineIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes heroFadeIn {
+  to { opacity: 1; }
+}
+@keyframes heroCardIn {
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal],
+  .hero-line, .hero-fade, .hero-card {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { geistSans } from "./fonts";
+import { geistSans, instrumentSerif } from "./fonts";
 import { Toaster } from "sonner";
 
 
@@ -48,7 +48,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="bg-slate-50">
       <body
-        className={`${geistSans.variable} antialiased min-h-screen text-slate-900`}
+        className={`${geistSans.variable} ${instrumentSerif.variable} antialiased min-h-screen text-slate-900`}
       >
         {children}
         <Toaster position="top-right" richColors />

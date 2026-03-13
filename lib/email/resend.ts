@@ -47,7 +47,7 @@ export async function sendWelcomeEmail({
   const body = `
     <h1 style="margin:0 0 8px;font-size:24px;color:#111827">Welcome to 234Grammar!</h1>
     <p style="margin:0 0 24px;color:#6b7280;font-size:16px">
-      Thanks for signing up. ${isPro ? 'Your Pro plan is now active — enjoy unlimited checks and all premium features.' : 'You&apos;re on the Free plan — 100 checks per month, no credit card needed.'}
+      Thanks for signing up. ${isPro ? 'Your Pro plan is now active — enjoy unlimited checks and all premium features.' : 'You&apos;re on the Free plan — 100 checks per month, no card needed.'}
     </p>
     <p style="margin:0 0 24px;color:#374151;font-size:15px">
       Click the verification link in the email Supabase sent you to activate your account and start writing better Nigerian English.
