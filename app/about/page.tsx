@@ -241,7 +241,7 @@ export default function AboutPage() {
                 {
                   status: "COMPLETED", statusBg: "bg-primary/10 text-primary", date: "January 2026",
                   title: "Phase 1: Foundation", borderColor: "ring-primary/20",
-                  items: ["Rule-based grammar engine for Nigerian English", "Paystack integration for naira payments", "Basic Pidgin validation"],
+                  items: ["Rule-based grammar engine for Nigerian English", "Monnify integration for naira payments", "Basic Pidgin validation"],
                   itemIcon: "✓", itemColor: "text-primary",
                 },
                 {

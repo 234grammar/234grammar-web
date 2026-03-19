@@ -60,7 +60,7 @@ export default function Home() {
     },
     {
       q: "How do I pay?",
-      a: "Pay in naira through Paystack using your debit card, bank transfer, or USSD. No virtual dollar cards needed. Cancel anytime with one click.",
+      a: "Pay in naira through Monnify using your debit card, bank transfer, or USSD. No virtual dollar cards needed. Cancel anytime with one click.",
     },
     {
       q: "Is my writing data private?",
@@ -118,7 +118,7 @@ export default function Home() {
               <span>Built for Nigerian Writers</span>
             </div>
 
-            <h1 className="font-display text-[3.5rem] md:text-[5rem] leading-[1.0] mb-8 text-ink tracking-tight">
+            <h1 className="font-display text-[3.5rem] md:text-[5rem] leading-none mb-8 text-ink tracking-tight">
               <span className="hero-line hero-line-1">Grammar that</span>
               <span className="hero-line hero-line-2">
                 <em className="text-primary">gets</em> Nigeria.
@@ -360,7 +360,7 @@ export default function Home() {
                 No virtual dollar cards. No declined payments. No exchange rate surprises.
               </p>
               <div className="space-y-2.5">
-                {["Paystack (card, transfer, USSD)", "₦1,500/month (93% cheaper)", "Cancel anytime"].map((b, j) => (
+                {["Monnify (card, transfer, USSD)", "₦1,500/month (93% cheaper)", "Cancel anytime"].map((b, j) => (
                   <div key={j} className="flex items-center gap-2 text-sm text-ink/65">
                     <IoIosCheckmarkCircle className="w-4 h-4 text-amber-600 shrink-0" />{b}
                   </div>
@@ -575,7 +575,7 @@ export default function Home() {
                 className="block w-full text-center bg-gold text-ink py-3.5 rounded-xl hover:bg-yellow-300 active:scale-95 transition font-bold text-sm mb-4">
                 Upgrade to Pro — ₦1,500/month
               </Link>
-              <p className="text-center text-white/25 text-xs">Pay with Paystack · Card, Bank Transfer, USSD</p>
+              <p className="text-center text-white/25 text-xs">Pay with Monnify · Card, Bank Transfer, USSD</p>
             </div>
           </div>
 

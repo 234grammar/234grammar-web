@@ -174,6 +174,7 @@ function EditorPageInner() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [isUpgrading, setIsUpgrading] = useState(false);
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showIssuesSheet, setShowIssuesSheet] = useState(false);
@@ -567,6 +568,7 @@ function EditorPageInner() {
   };
 
   const startProTrial = async () => {
+    setIsUpgrading(true);
     try {
       const res = await fetch("/api/payment/initialize", {
         method: "POST",
@@ -580,9 +582,11 @@ function EditorPageInner() {
         toast.error(
           data.message || "Could not initialize payment. Please try again.",
         );
+        setIsUpgrading(false);
       }
     } catch {
       toast.error("Something went wrong. Please try again.");
+      setIsUpgrading(false);
     }
   };
 
@@ -1525,9 +1529,16 @@ function EditorPageInner() {
 
               <button
                 onClick={startProTrial}
-                className="w-full bg-primary text-white py-4 cursor-pointer rounded-lg text-lg font-bold hover:bg-primaryHover transition shadow-lg"
+                disabled={isUpgrading}
+                className="w-full bg-primary text-white py-4 cursor-pointer rounded-lg text-lg font-bold hover:bg-primaryHover transition shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Upgrade to Pro — ₦1,500/month
+                {isUpgrading && (
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                )}
+                {isUpgrading ? "Redirecting to payment…" : "Upgrade to Pro — ₦1,500/month"}
               </button>
             </div>
           </div>

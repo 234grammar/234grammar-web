@@ -50,7 +50,7 @@ export default function TermsPage() {
               </div>
               <div>
                 <h3 className="font-semibold text-gray-800 mb-1">Pro Plan</h3>
-                <p>The Pro plan is billed at <strong>₦1,500 per month</strong> via Paystack. It includes unlimited grammar checks, document storage (up to 100 documents), cloud sync, export (PDF, DOCX, TXT), and advanced language features. The Pro plan renews automatically each month until cancelled.</p>
+                <p>The Pro plan is billed at <strong>₦1,500 per month</strong> via Monnify. It includes unlimited grammar checks, document storage (up to 100 documents), cloud sync, export (PDF, DOCX, TXT), and advanced language features. The Pro plan renews automatically each month until cancelled.</p>
               </div>
             </div>
           </section>
@@ -58,8 +58,8 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-bold text-gray-900 mb-3">4. Payments and Billing</h2>
             <ul className="list-disc list-inside space-y-2">
-              <li>All payments are processed by Paystack in Nigerian Naira (NGN).</li>
-              <li>By subscribing to Pro, you authorise Paystack to charge ₦1,500 to your payment method each month.</li>
+              <li>All payments are processed by Monnify in Nigerian Naira (NGN).</li>
+              <li>By subscribing to Pro, you authorise Monnify to charge ₦1,500 to your payment method each month.</li>
               <li>Subscriptions renew automatically. You will not receive a separate renewal notice.</li>
               <li>We do not issue refunds for partial months. If you cancel mid-cycle, you retain Pro access until the end of the billing period.</li>
               <li>Prices may change. We will notify existing subscribers at least 14 days before any price increase takes effect.</li>

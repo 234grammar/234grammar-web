@@ -62,7 +62,7 @@ export default function PrivacyPage() {
               </div>
               <div>
                 <h3 className="font-semibold text-gray-800 mb-1">Payment Information</h3>
-                <p>Payments are processed by <strong>Paystack</strong>. We do not store your card details. We receive a payment confirmation and update your account plan accordingly.</p>
+                <p>Payments are processed by <strong>Monnify</strong>. We do not store your card details. We receive a payment confirmation and update your account plan accordingly.</p>
               </div>
             </div>
           </section>
@@ -88,8 +88,8 @@ export default function PrivacyPage() {
                 <p>We use Supabase for database storage and authentication. Your account data and saved documents are stored on Supabase infrastructure.</p>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-800 mb-1">Paystack</h3>
-                <p>We use Paystack to process payments. Your payment information is handled directly by Paystack and subject to their privacy policy.</p>
+                <h3 className="font-semibold text-gray-800 mb-1">Monnify</h3>
+                <p>We use Monnify to process payments. Your payment information is handled directly by Monnify and subject to their privacy policy.</p>
               </div>
               <div>
                 <h3 className="font-semibold text-gray-800 mb-1">Resend</h3>
