@@ -57,12 +57,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${origin}/editor?payment=failed&reason=no_user`);
     }
 
-    // Update profile to pro
+    // Update profile to pro (upsert handles users who have no profile row yet)
     const serviceClient = await createServiceClient();
     await serviceClient
       .from('profiles')
-      .update({ plan: 'pro', trial_ends_at: null })
-      .eq('id', userId);
+      .upsert({ id: userId, plan: 'pro', trial_ends_at: null }, { onConflict: 'id' });
 
     // Fire-and-forget confirmation email
     if (email) {

@@ -40,5 +40,19 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  if (pathname.startsWith('/admin')) {
+    if (!user) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      url.searchParams.set('expired', 'true');
+      return NextResponse.redirect(url);
+    }
+    if (user.email !== process.env.ADMIN_EMAIL) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/';
+      return NextResponse.redirect(url);
+    }
+  }
+
   return supabaseResponse;
 }
