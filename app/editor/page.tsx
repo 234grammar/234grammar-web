@@ -137,6 +137,115 @@ function applyHighlights(editor: HTMLDivElement, issues: Issue[]) {
   }
 }
 
+// Extract text from a contentEditable div, inserting a newline at block
+// boundaries so words across paragraphs don't merge (e.g. "fine\nhow"
+// instead of "finehow"). Returns a string whose character offsets align
+// with getTextNodeAtOffset when we account for the inserted separators.
+function getEditorText(editor: HTMLElement): string {
+  const parts: string[] = [];
+  const BLOCK_TAGS = new Set(['DIV', 'P', 'BR', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE']);
+
+  function walk(node: Node, isFirst: boolean) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      parts.push(node.textContent || '');
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    const el = node as HTMLElement;
+    const isBlock = BLOCK_TAGS.has(el.tagName);
+
+    if (el.tagName === 'BR') {
+      parts.push('\n');
+      return;
+    }
+
+    // Insert newline before block elements (except the very first one)
+    if (isBlock && !isFirst && parts.length > 0) {
+      // Only add if last char isn't already a newline
+      const last = parts[parts.length - 1];
+      if (last && !last.endsWith('\n')) parts.push('\n');
+    }
+
+    let first = true;
+    for (const child of Array.from(node.childNodes)) {
+      walk(child, isFirst && first);
+      first = false;
+    }
+  }
+
+  walk(editor, true);
+  return parts.join('');
+}
+
+// Build a mapping from "clean text" offsets (with inserted \n) back to
+// textContent offsets (no \n). This lets us lint the clean text but use
+// the mapped positions for getTextNodeAtOffset highlights.
+function buildOffsetMap(editor: HTMLElement): { cleanText: string; toRawOffset: (cleanPos: number) => number } {
+  const BLOCK_TAGS = new Set(['DIV', 'P', 'BR', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE']);
+  const cleanParts: string[] = [];
+  // Track how many synthetic chars we've inserted at each point
+  let rawOffset = 0;
+  let cleanOffset = 0;
+  // Array of [cleanOffset, rawOffset] pairs for mapping
+  const map: [number, number][] = [[0, 0]];
+
+  function walk(node: Node, isFirst: boolean) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const t = node.textContent || '';
+      cleanParts.push(t);
+      rawOffset += t.length;
+      cleanOffset += t.length;
+      map.push([cleanOffset, rawOffset]);
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    const el = node as HTMLElement;
+    const isBlock = BLOCK_TAGS.has(el.tagName);
+
+    if (el.tagName === 'BR') {
+      cleanParts.push('\n');
+      cleanOffset += 1;
+      // BR doesn't add to textContent rawOffset
+      map.push([cleanOffset, rawOffset]);
+      return;
+    }
+
+    if (isBlock && !isFirst && cleanParts.length > 0) {
+      const last = cleanParts[cleanParts.length - 1];
+      if (last && !last.endsWith('\n')) {
+        cleanParts.push('\n');
+        cleanOffset += 1;
+        map.push([cleanOffset, rawOffset]);
+      }
+    }
+
+    let first = true;
+    for (const child of Array.from(node.childNodes)) {
+      walk(child, isFirst && first);
+      first = false;
+    }
+  }
+
+  walk(editor, true);
+
+  const cleanText = cleanParts.join('');
+
+  function toRawOffset(cleanPos: number): number {
+    // Binary search for the right segment
+    let lo = 0, hi = map.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (map[mid][0] <= cleanPos) lo = mid;
+      else hi = mid - 1;
+    }
+    const [cBase, rBase] = map[lo];
+    const delta = cleanPos - cBase;
+    return rBase + delta;
+  }
+
+  return { cleanText, toRawOffset };
+}
+
 // ----------------------------------------
 
 function EditorPageInner() {
@@ -296,7 +405,7 @@ function EditorPageInner() {
   }, [unsavedChanges]);
 
   const checkGrammarWithHarper = useCallback(
-    async (text: string, used: number, plan: string) => {
+    async (text: string, used: number, plan: string, mapOffset?: (pos: number) => number) => {
       // Skip counting if the text hasn't changed since the last check
       const textChanged = text !== lastCheckedTextRef.current;
       lastCheckedTextRef.current = text;
@@ -333,12 +442,18 @@ function EditorPageInner() {
         return;
       }
 
+      // Helper: map issue positions from clean-text offsets to raw textContent offsets
+      const mapIssues = (issues: Issue[]): Issue[] => {
+        if (!mapOffset) return issues;
+        return issues.map(i => ({ ...i, position: mapOffset(i.position) }));
+      };
+
       // Standard English → use Harper WASM linter
       if (languageMode === "standard-english") {
         try {
           const { lintText } = await import("@/lib/grammar/harper");
           const harperIssues = await lintText(text);
-          setIssues(harperIssues);
+          setIssues(mapIssues(harperIssues));
         } catch (err) {
           console.error("Harper lint error:", err);
           setIssues([]);
@@ -353,7 +468,7 @@ function EditorPageInner() {
           const { filterNigerianIssues } = await import("@/lib/grammar/nigerian");
           const harperIssues = await lintText(text);
           const nigerianIssues = filterNigerianIssues(harperIssues, text);
-          setIssues(nigerianIssues);
+          setIssues(mapIssues(nigerianIssues));
         } catch (err) {
           console.error("Nigerian lint error:", err);
           setIssues([]);
@@ -366,7 +481,7 @@ function EditorPageInner() {
         try {
           const { lintPidgin } = await import("@/lib/grammar/pidgin");
           const pidginIssues = lintPidgin(text);
-          setIssues(pidginIssues);
+          setIssues(mapIssues(pidginIssues));
         } catch (err) {
           console.error("Pidgin lint error:", err);
           setIssues([]);
@@ -452,8 +567,10 @@ function EditorPageInner() {
   }, []);
 
   const handleEditorInput = useCallback(() => {
-    const text = editorRef.current?.textContent || "";
-    const words = text
+    const editor = editorRef.current;
+    if (!editor) return;
+    const { cleanText, toRawOffset } = buildOffsetMap(editor);
+    const words = cleanText
       .trim()
       .split(/\s+/)
       .filter((w) => w.length > 0);
@@ -474,7 +591,10 @@ function EditorPageInner() {
 
     if (grammarTimeout.current) clearTimeout(grammarTimeout.current);
     grammarTimeout.current = setTimeout(() => {
-      checkGrammarWithHarper(text, checksUsedRef.current, userPlanRef.current);
+      // Re-build offset map at lint time (text may have changed during debounce)
+      if (!editorRef.current) return;
+      const fresh = buildOffsetMap(editorRef.current);
+      checkGrammarWithHarper(fresh.cleanText, checksUsedRef.current, userPlanRef.current, fresh.toRawOffset);
     }, 1000);
 
     if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
@@ -540,7 +660,9 @@ function EditorPageInner() {
       autoSaveTimeout.current = setTimeout(performAutoSave, delay);
       if (grammarTimeout.current) clearTimeout(grammarTimeout.current);
       grammarTimeout.current = setTimeout(() => {
-        checkGrammarWithHarper(txt, checksUsedRef.current, userPlanRef.current);
+        if (!editorRef.current) return;
+        const fresh = buildOffsetMap(editorRef.current);
+        checkGrammarWithHarper(fresh.cleanText, checksUsedRef.current, userPlanRef.current, fresh.toRawOffset);
       }, 1000);
     };
 
@@ -629,9 +751,10 @@ function EditorPageInner() {
 
   // Re-run grammar check whenever the language mode changes
   useEffect(() => {
-    const text = editorRef.current?.textContent || "";
-    if (!text.trim()) return;
-    checkGrammarWithHarper(text, checksUsed, userPlan);
+    if (!editorRef.current) return;
+    const { cleanText, toRawOffset } = buildOffsetMap(editorRef.current);
+    if (!cleanText.trim()) return;
+    checkGrammarWithHarper(cleanText, checksUsed, userPlan, toRawOffset);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [languageMode]);
 

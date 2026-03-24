@@ -11,17 +11,34 @@ const WHITELIST_WORDS = new Set([
   // Foods & drinks
   'puff-puff', 'puffpuff', 'akara', 'moimoi', 'moin-moin', 'boli',
   'kilishi', 'zobo', 'kunu', 'ogi', 'nkwobi', 'ofada', 'agege',
-  'pepper-soup', 'peppersoup', 'isi-ewu', 'isiewu',
+  'pepper-soup', 'peppersoup', 'isi-ewu', 'isiewu', 'fufu', 'pomo',
+  'dodo', 'efo', 'ogbono', 'edikaikong', 'afang', 'ewedu', 'gbegiri',
+  'tuwo', 'masa', 'fura', 'nono', 'kunun', 'kuli-kuli', 'kulikuli',
+  'chin-chin', 'chinchin', 'shawarma',
   // Exclamations & discourse
   'chai', 'choi', 'chineke', 'tufiakwa', 'gbam', 'haba', 'kai', 'howfar',
+  'ewoo', 'mogbe', 'hian', 'mehn', 'nna', 'chaii',
   // Social & slang
   'shakara', 'ajebutter', 'ajepako', 'jara', 'gbedu', 'sapa', 'japa',
   'yab', 'yabis', 'gbege', 'razz', 'lamba', 'toasting', 'packaging',
-  'werey', 'maga', 'wayo', 'ment', 'tori',
+  'werey', 'maga', 'wayo', 'ment', 'tori', 'amebo', 'ashawo',
+  'omo', 'bobo', 'sisi', 'bros', 'broda', 'babe', 'padi', 'paddy',
+  'detty', 'litty', 'steeze', 'cruise', 'vibe', 'flex',
+  'shalaye', 'vawulence', 'idan', 'shege', 'kasala', 'katakata',
+  'famz', 'konji', 'kolo', 'ajebo', 'orobo', 'lepa', 'lekpa',
+  'gbas', 'gbos', 'trenches',
   // Transport & urban
-  'molue', 'tokunbo', 'bolekaja',
+  'molue', 'tokunbo', 'bolekaja', 'okrika', 'agbero',
   // People & address
-  'alhaji', 'alhaja',
+  'alhaji', 'alhaja', 'baba', 'iya', 'oyinbo', 'oyibo',
+  // Places & cultural
+  'owambe', 'asoebi', 'gele', 'fila', 'iro', 'buba', 'dashiki',
+  'igbo', 'yoruba', 'hausa', 'ijaw', 'efik', 'ibibio', 'tiv', 'nupe',
+  // Business & formal
+  'revert', 'severally', 'opportuned',
+  // Religious
+  'alhamdulillah', 'insha', 'allah', 'subhanallah', 'mashallah',
+  'billahi', 'tallahi',
 ]);
 
 // Nigerian phrases — suppress Harper issues whose position falls within these
@@ -56,6 +73,38 @@ const WHITELIST_PHRASES = [
   "pepper them",
   "e don do",
   "no be so",
+  // New phrases
+  "well done",
+  "sorry oh",
+  "no vex",
+  "how far",
+  "you don hear",
+  "ginger me",
+  "on God",
+  "e choke",
+  "gbas gbos",
+  "las las",
+  "na so",
+  "na true",
+  "God dey",
+  "make we",
+  "no shaking",
+  "na cruise",
+  "drop for me",
+  "turn up",
+  "na wa",
+  "na wa oh",
+  "see trouble",
+  "bone face",
+  "change am",
+  "use your head",
+  "no send anybody",
+  "you sabi",
+  "catch cruise",
+  "carry go",
+  "enter one chance",
+  "jack hammer",
+  "off head",
 ];
 
 // Positive recognitions — detect Nigerian expressions and mark isCorrect: true
@@ -248,6 +297,87 @@ const NIGERIAN_EXPRESSIONS: Array<{ pattern: RegExp; message: string }> = [
     pattern: /\bborrow me\b/gi,
     message: '🇳🇬 Valid Nigerian English — used to mean "lend me"',
   },
+  // New expressions
+  {
+    pattern: /\bwell done\b/gi,
+    message: '🇳🇬 Nigerian greeting — used to greet someone who is working',
+  },
+  {
+    pattern: /\bsorry oh\b/gi,
+    message: '🇳🇬 Valid Nigerian English — expression of sympathy or apology',
+  },
+  {
+    pattern: /\bno vex\b/gi,
+    message: '🇳🇬 Nigerian expression — means "don\'t be angry / sorry"',
+  },
+  {
+    pattern: /\benter one chance\b/gi,
+    message: '🇳🇬 Nigerian expression — means "to be scammed or tricked"',
+  },
+  {
+    pattern: /\bcatch cruise\b/gi,
+    message: '🇳🇬 Nigerian slang — means "to have fun / joke around"',
+  },
+  {
+    pattern: /\bna wa oh?\b/gi,
+    message: '🇳🇬 Nigerian exclamation — means "this is unbelievable / I\'m shocked"',
+  },
+  {
+    pattern: /\bno shaking\b/gi,
+    message: '🇳🇬 Nigerian expression — means "no worries / all is well"',
+  },
+  {
+    pattern: /\boff head\b/gi,
+    message: '🇳🇬 Nigerian expression — means "to go crazy / lose one\'s mind"',
+  },
+  {
+    pattern: /\bbone face\b/gi,
+    message: '🇳🇬 Nigerian expression — means "to keep a straight/serious face"',
+  },
+  {
+    pattern: /\bsoro soke\b/gi,
+    message: '🇳🇬 Nigerian expression — means "speak up / speak louder" (Yoruba)',
+  },
+  {
+    pattern: /\bdetty\b/gi,
+    message: '🇳🇬 Nigerian slang — means "dirty" in a fun/party sense (e.g., "detty December")',
+  },
+  {
+    pattern: /\bno send anybody\b/gi,
+    message: '🇳🇬 Nigerian expression — means "I don\'t care about anyone\'s opinion"',
+  },
+  {
+    pattern: /\buse your head\b/gi,
+    message: '🇳🇬 Valid Nigerian English — means "think wisely / be smart about it"',
+  },
+  {
+    pattern: /\bGod dey\b/gi,
+    message: '🇳🇬 Nigerian expression — means "God exists / God is in control"',
+  },
+  {
+    pattern: /\bon God\b/gi,
+    message: '🇳🇬 Nigerian/slang expression — means "I swear / truly"',
+  },
+  {
+    pattern: /\be choke\b/gi,
+    message: '🇳🇬 Nigerian slang — means "it\'s overwhelming / impressive"',
+  },
+  {
+    pattern: /\bgbas gbos\b/gi,
+    message: '🇳🇬 Nigerian expression — means "exchange of blows / back and forth"',
+  },
+  {
+    pattern: /\bvawulence\b/gi,
+    message: '🇳🇬 Nigerian slang — means "violence / drama" (intentional respelling)',
+  },
+  {
+    pattern: /\bshalaye\b/gi,
+    message: '🇳🇬 Nigerian slang — means "to explain yourself / confess"',
+  },
+  {
+    pattern: /\bidan\b/gi,
+    message: '🇳🇬 Nigerian slang — means "wizard / someone who is exceptionally skilled"',
+  },
 ];
 
 // Custom error rules for common Nigerian writing mistakes Harper may miss
@@ -257,7 +387,7 @@ const NIGERIAN_ERROR_RULES: Array<{
   suggestion: string;
   type: string;
 }> = [
-  // Spelling conventions
+  // Spelling conventions — compound words written as one
   {
     pattern: /\bofcourse\b/gi,
     message: '"ofcourse" should be two words',
@@ -283,10 +413,65 @@ const NIGERIAN_ERROR_RULES: Array<{
     type: 'spelling',
   },
   {
+    pattern: /\balot\b/gi,
+    message: '"alot" should be two words',
+    suggestion: 'a lot',
+    type: 'spelling',
+  },
+  {
+    pattern: /\batleast\b/gi,
+    message: '"atleast" should be two words',
+    suggestion: 'at least',
+    type: 'spelling',
+  },
+  {
+    pattern: /\bincase\b/gi,
+    message: '"incase" should be two words',
+    suggestion: 'in case',
+    type: 'spelling',
+  },
+  {
+    pattern: /\binfront\b/gi,
+    message: '"infront" should be two words',
+    suggestion: 'in front',
+    type: 'spelling',
+  },
+  {
+    pattern: /\binbetween\b/gi,
+    message: '"inbetween" should be two words',
+    suggestion: 'in between',
+    type: 'spelling',
+  },
+  {
+    pattern: /\beventho\b/gi,
+    message: '"eventho" should be "even though"',
+    suggestion: 'even though',
+    type: 'spelling',
+  },
+  {
+    pattern: /\bontop\b/gi,
+    message: '"ontop" should be two words',
+    suggestion: 'on top',
+    type: 'spelling',
+  },
+  // Nigerian English style — words with different meanings internationally
+  {
     pattern: /\bbarbing salon\b/gi,
     message: '"Barbing salon" is a Nigerian coinage — consider "barbershop" for international audiences',
     suggestion: 'barbershop',
     type: 'style',
+  },
+  {
+    pattern: /\bopportune(?:d)\b/gi,
+    message: '"Opportuned" is not standard English — use "had the opportunity" or "was fortunate"',
+    suggestion: 'had the opportunity',
+    type: 'grammar',
+  },
+  {
+    pattern: /\bflash light\b/gi,
+    message: 'In Nigerian English "flash light" often means "torch" — in standard English it\'s one word: "flashlight"',
+    suggestion: 'flashlight',
+    type: 'spelling',
   },
   // Stative verbs incorrectly used in progressive form
   {
@@ -299,6 +484,24 @@ const NIGERIAN_ERROR_RULES: Array<{
     pattern: /\b(?:is|are|am) owing\b/gi,
     message: '"Owe" is a stative verb — use "owes" or "owe" instead of "is/are owing"',
     suggestion: 'owes / owe',
+    type: 'grammar',
+  },
+  {
+    pattern: /\b(?:is|are|am) having\b/gi,
+    message: '"Have" (possession) is a stative verb — use "has" or "have" instead of "is/are having"',
+    suggestion: 'has / have',
+    type: 'grammar',
+  },
+  {
+    pattern: /\b(?:is|are|am) containing\b/gi,
+    message: '"Contain" is a stative verb — use "contains" or "contain" instead',
+    suggestion: 'contains / contain',
+    type: 'grammar',
+  },
+  {
+    pattern: /\b(?:is|are|am) comprising\b/gi,
+    message: '"Comprise" is a stative verb — use "comprises" or "comprise" instead',
+    suggestion: 'comprises / comprise',
     type: 'grammar',
   },
   // Borrow / lend confusion
@@ -333,6 +536,80 @@ const NIGERIAN_ERROR_RULES: Array<{
     message: '"With immediate effect" is formal Nigerian English — consider "effective immediately" for international audiences',
     suggestion: 'effective immediately',
     type: 'style',
+  },
+  // Additional formal / business writing quirks
+  {
+    pattern: /\bkindly(?= (?:assist|help|do|ensure|confirm|note|advise))\b/gi,
+    message: '"Kindly" is common in Nigerian formal English — "please" is more natural in most international contexts',
+    suggestion: 'please',
+    type: 'style',
+  },
+  {
+    pattern: /\bplease be informed that\b/gi,
+    message: '"Please be informed that" is overly formal — consider a more direct phrasing',
+    suggestion: '',
+    type: 'style',
+  },
+  {
+    pattern: /\bI wish to bring to your notice\b/gi,
+    message: 'This is a formal Nigerian English phrase — consider "I\'d like to let you know" or simply state the point',
+    suggestion: "I'd like to let you know",
+    type: 'style',
+  },
+  {
+    pattern: /\bas at when due\b/gi,
+    message: '"As at when due" is Nigerian English — use "when due" or "at the appropriate time"',
+    suggestion: 'when due',
+    type: 'style',
+  },
+  {
+    pattern: /\bput to bed\b/gi,
+    message: '"Put to bed" in Nigerian English means "to give birth" — in international English it means "to finish / finalize"',
+    suggestion: '',
+    type: 'style',
+  },
+  // Common grammar errors
+  {
+    pattern: /\bwould of\b/gi,
+    message: '"Would of" should be "would have" or "would\'ve"',
+    suggestion: 'would have',
+    type: 'grammar',
+  },
+  {
+    pattern: /\bcould of\b/gi,
+    message: '"Could of" should be "could have" or "could\'ve"',
+    suggestion: 'could have',
+    type: 'grammar',
+  },
+  {
+    pattern: /\bshould of\b/gi,
+    message: '"Should of" should be "should have" or "should\'ve"',
+    suggestion: 'should have',
+    type: 'grammar',
+  },
+  {
+    pattern: /\birregardless\b/gi,
+    message: '"Irregardless" is non-standard — use "regardless"',
+    suggestion: 'regardless',
+    type: 'grammar',
+  },
+  {
+    pattern: /\bmore better\b/gi,
+    message: '"More better" is a double comparative — use just "better"',
+    suggestion: 'better',
+    type: 'grammar',
+  },
+  {
+    pattern: /\bmore easier\b/gi,
+    message: '"More easier" is a double comparative — use just "easier"',
+    suggestion: 'easier',
+    type: 'grammar',
+  },
+  {
+    pattern: /\bmost biggest\b/gi,
+    message: '"Most biggest" is a double superlative — use just "biggest"',
+    suggestion: 'biggest',
+    type: 'grammar',
   },
 ];
 
