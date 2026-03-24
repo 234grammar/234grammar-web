@@ -148,12 +148,16 @@ function EditorPageInner() {
   const currentDocIdRef = useRef<string | null>(null);
   const documentTitleRef = useRef("Untitled Document");
   const userPlanRef = useRef("free");
+  const checksUsedRef = useRef(0);
+  const lastCheckedTextRef = useRef<string>("");
 
   const [currentDocId, setCurrentDocId] = useState<string | null>(null);
   const [userPlan, setUserPlan] = useState("free");
   const [userEmail, setUserEmail] = useState("");
   const [checksUsed, setChecksUsed] = useState(0);
   const checksLimit = 100;
+  const freeDocLimit = 3;
+  const freeWordLimit = 1500;
   const [languageMode, setLanguageMode] = useState("nigerian-english");
   const [documentTitle, setDocumentTitle] = useState("Untitled Document");
   const [saveStatus, setSaveStatus] = useState("Saved");
@@ -178,6 +182,7 @@ function EditorPageInner() {
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showIssuesSheet, setShowIssuesSheet] = useState(false);
+  const [showWordLimitModal, setShowWordLimitModal] = useState(false);
   const [warningChecks, setWarningChecks] = useState(80);
   const [resetDays, setResetDays] = useState(12);
 
@@ -200,6 +205,7 @@ function EditorPageInner() {
       const cachedChecks = parseInt(localStorage.getItem("checksUsed") || "0");
       setUserPlan(cachedPlan);
       setChecksUsed(cachedChecks);
+      checksUsedRef.current = cachedChecks;
 
       try {
         const res = await fetch("/api/user/preferences");
@@ -211,38 +217,37 @@ function EditorPageInner() {
           setUserPlan(plan);
           userPlanRef.current = plan;
           setChecksUsed(checks);
+          checksUsedRef.current = checks;
           setUserEmail(data.email ?? "");
           if (!modeParam) setLanguageMode(defaultMode);
           localStorage.setItem("userPlan", plan);
           localStorage.setItem("checksUsed", String(checks));
 
-          if (plan === "pro") {
-            setDocsLoading(true);
-            const docsRes = await fetch("/api/documents");
-            if (docsRes.ok) {
-              const docs: Document[] = await docsRes.json();
-              setDocuments(docs);
-              if (docs.length > 0) {
-                // Load full content of first document
-                const first = await fetch(`/api/documents/${docs[0].id}`);
-                if (first.ok) {
-                  const { content } = await first.json();
-                  if (editorRef.current) editorRef.current.innerHTML = content;
-                  const words = (editorRef.current?.textContent || "")
-                    .trim()
-                    .split(/\s+/)
-                    .filter((w) => w.length > 0);
-                  setWordCount(words.length);
-                  setReadingTime(Math.ceil(words.length / 250));
-                }
-                setDocumentTitle(docs[0].title);
-                documentTitleRef.current = docs[0].title;
-                currentDocIdRef.current = docs[0].id;
-                setCurrentDocId(docs[0].id);
+          setDocsLoading(true);
+          const docsRes = await fetch("/api/documents");
+          if (docsRes.ok) {
+            const docs: Document[] = await docsRes.json();
+            setDocuments(docs);
+            if (docs.length > 0) {
+              // Load full content of first document
+              const first = await fetch(`/api/documents/${docs[0].id}`);
+              if (first.ok) {
+                const { content } = await first.json();
+                if (editorRef.current) editorRef.current.innerHTML = content;
+                const words = (editorRef.current?.textContent || "")
+                  .trim()
+                  .split(/\s+/)
+                  .filter((w) => w.length > 0);
+                setWordCount(words.length);
+                setReadingTime(Math.ceil(words.length / 250));
               }
+              setDocumentTitle(docs[0].title);
+              documentTitleRef.current = docs[0].title;
+              currentDocIdRef.current = docs[0].id;
+              setCurrentDocId(docs[0].id);
             }
-            setDocsLoading(false);
           }
+          setDocsLoading(false);
         } else {
           // Not logged in — use localStorage only
           // Try to get email from Supabase auth directly (client-side)
@@ -292,12 +297,17 @@ function EditorPageInner() {
 
   const checkGrammarWithHarper = useCallback(
     async (text: string, used: number, plan: string) => {
+      // Skip counting if the text hasn't changed since the last check
+      const textChanged = text !== lastCheckedTextRef.current;
+      lastCheckedTextRef.current = text;
+
       let newUsed = used;
 
-      if (plan === "free") {
+      if (plan === "free" && textChanged) {
         newUsed = used + 1;
         localStorage.setItem("checksUsed", String(newUsed));
         setChecksUsed(newUsed);
+        checksUsedRef.current = newUsed;
 
         if (newUsed === 80) {
           setWarningChecks(newUsed);
@@ -307,16 +317,16 @@ function EditorPageInner() {
           if (editorRef.current) editorRef.current.contentEditable = "false";
           return;
         }
-      }
 
-      // Sync check count to Supabase (fire-and-forget)
-      fetch("/api/user/checks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ checksUsed: newUsed }),
-      }).catch(() => {
-        /* ignore — not critical */
-      });
+        // Sync check count to Supabase (fire-and-forget)
+        fetch("/api/user/checks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ checksUsed: newUsed }),
+        }).catch(() => {
+          /* ignore — not critical */
+        });
+      }
 
       if (!text.trim()) {
         setIssues([]);
@@ -370,10 +380,15 @@ function EditorPageInner() {
   );
 
   const performAutoSave = useCallback(async () => {
-    if (userPlanRef.current !== "pro") return;
     const content = editorRef.current?.innerHTML || "";
     const text = editorRef.current?.textContent || "";
     if (!content.trim() && !text.trim()) return;
+
+    // Don't auto-save if free user exceeds word limit
+    if (userPlanRef.current !== "pro") {
+      const wc = text.trim().split(/\s+/).filter(w => w.length > 0).length;
+      if (wc > 1500) return;
+    }
     setSaveStatus("Saving...");
     setSaveStatusColor("text-gray-400");
     const words = text
@@ -409,6 +424,15 @@ function EditorPageInner() {
         );
       }
     } else {
+      // Free users: check doc limit before creating
+      if (userPlanRef.current !== "pro") {
+        const currentDocs = await fetch("/api/documents").then(r => r.ok ? r.json() : []);
+        if (Array.isArray(currentDocs) && currentDocs.length >= 3) {
+          setSaveStatus("Doc limit reached");
+          setSaveStatusColor("text-red-500");
+          return;
+        }
+      }
       const res = await fetch("/api/documents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -435,20 +459,169 @@ function EditorPageInner() {
       .filter((w) => w.length > 0);
     setWordCount(words.length);
     setReadingTime(Math.ceil(words.length / 250));
+
+    // Word limit for free users
+    if (userPlanRef.current !== "pro" && words.length > freeWordLimit) {
+      setSaveStatus(`Over ${freeWordLimit} word limit`);
+      setSaveStatusColor("text-red-500");
+      setShowWordLimitModal(true);
+      return; // Don't auto-save or grammar check over-limit text
+    }
+
     setUnsavedChanges(true);
     setSaveStatus("Unsaved changes");
     setSaveStatusColor("text-yellow-600");
 
     if (grammarTimeout.current) clearTimeout(grammarTimeout.current);
     grammarTimeout.current = setTimeout(() => {
-      checkGrammarWithHarper(text, checksUsed, userPlan);
+      checkGrammarWithHarper(text, checksUsedRef.current, userPlanRef.current);
     }, 1000);
 
-    if (userPlanRef.current === "pro") {
-      if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
-      autoSaveTimeout.current = setTimeout(performAutoSave, 2000);
+    if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
+    const delay = userPlanRef.current === "pro" ? 2000 : 4000;
+    autoSaveTimeout.current = setTimeout(performAutoSave, delay);
+  }, [checkGrammarWithHarper, performAutoSave]);
+
+  const applySuggestion = useCallback((issue: Issue) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const text = editor.textContent || "";
+    // Verify the text at the expected position still matches
+    const actual = text.slice(issue.position, issue.position + issue.text.length);
+    if (actual !== issue.text) return; // stale — skip silently
+
+    const replacement = issue.suggestion || "";
+
+    // Use Range API to replace only the matched span — preserves line breaks / DOM structure
+    let start = getTextNodeAtOffset(editor, issue.position);
+    const end = getTextNodeAtOffset(editor, issue.position + issue.text.length);
+    if (!start || !end) return;
+
+    // If start resolved to the very end of a text node, advance to the next text node.
+    // This happens at paragraph boundaries (e.g. first char of paragraph 2).
+    if (start.offset === start.node.length) {
+      const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+      walker.currentNode = start.node;
+      const next = walker.nextNode() as Text | null;
+      if (next) start = { node: next, offset: 0 };
     }
-  }, [checksUsed, userPlan, checkGrammarWithHarper, performAutoSave]);
+
+    const range = document.createRange();
+    range.setStart(start.node, start.offset);
+    range.setEnd(end.node, end.offset);
+    range.deleteContents();
+    if (replacement) range.insertNode(document.createTextNode(replacement));
+
+    const newText = editor.textContent || "";
+
+    // Optimistically remove this issue and shift positions for remaining issues
+    const delta = replacement.length - issue.text.length;
+    setIssues(prev =>
+      prev
+        .filter(i => i !== issue)
+        .map(i =>
+          i.position > issue.position
+            ? { ...i, position: i.position + delta }
+            : i,
+        ),
+    );
+
+    // Helper to sync word count, save status, auto-save, and re-lint
+    const syncAfterEdit = (txt: string) => {
+      const words = txt.trim().split(/\s+/).filter(w => w.length > 0);
+      setWordCount(words.length);
+      setReadingTime(Math.ceil(words.length / 250));
+      setUnsavedChanges(true);
+      setSaveStatus("Unsaved changes");
+      setSaveStatusColor("text-yellow-600");
+      if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
+      const delay = userPlanRef.current === "pro" ? 2000 : 4000;
+      autoSaveTimeout.current = setTimeout(performAutoSave, delay);
+      if (grammarTimeout.current) clearTimeout(grammarTimeout.current);
+      grammarTimeout.current = setTimeout(() => {
+        checkGrammarWithHarper(txt, checksUsedRef.current, userPlanRef.current);
+      }, 1000);
+    };
+
+    syncAfterEdit(newText);
+
+    // Show undo toast — capture what we need to reverse the fix
+    const undoPosition = issue.position;
+    const undoOriginal = issue.text;
+    const undoReplacement = replacement;
+    const removedIssue = issue;
+
+    toast(`Fixed: "${issue.text}" → "${replacement}"`, {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          const ed = editorRef.current;
+          if (!ed) return;
+          const currentText = ed.textContent || "";
+          // Verify the replacement is still at the expected position
+          const actual = currentText.slice(undoPosition, undoPosition + undoReplacement.length);
+          if (actual !== undoReplacement) return;
+
+          let uStart = getTextNodeAtOffset(ed, undoPosition);
+          const uEnd = getTextNodeAtOffset(ed, undoPosition + undoReplacement.length);
+          if (!uStart || !uEnd) return;
+          if (uStart.offset === uStart.node.length) {
+            const walker = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT);
+            walker.currentNode = uStart.node;
+            const next = walker.nextNode() as Text | null;
+            if (next) uStart = { node: next, offset: 0 };
+          }
+          const uRange = document.createRange();
+          uRange.setStart(uStart.node, uStart.offset);
+          uRange.setEnd(uEnd.node, uEnd.offset);
+          uRange.deleteContents();
+          if (undoOriginal) uRange.insertNode(document.createTextNode(undoOriginal));
+
+          // Restore the issue back into the list
+          setIssues(prev => {
+            const restored = prev.map(i =>
+              i.position > undoPosition
+                ? { ...i, position: i.position - delta }
+                : i,
+            );
+            restored.push(removedIssue);
+            restored.sort((a, b) => a.position - b.position);
+            return restored;
+          });
+
+          syncAfterEdit(ed.textContent || "");
+        },
+      },
+      duration: 5000,
+    });
+  }, [checkGrammarWithHarper, performAutoSave]);
+
+  const scrollToIssue = useCallback((issue: Issue) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const start = getTextNodeAtOffset(editor, issue.position);
+    const end = getTextNodeAtOffset(editor, issue.position + issue.text.length);
+    if (!start || !end) return;
+    const range = document.createRange();
+    range.setStart(start.node, start.offset);
+    range.setEnd(end.node, end.offset);
+    const rect = range.getBoundingClientRect();
+    const scrollContainer = editor.closest('.overflow-y-auto');
+    if (!scrollContainer) return;
+    const containerRect = scrollContainer.getBoundingClientRect();
+    // Scroll so the issue text is roughly centered vertically
+    const scrollTop = scrollContainer.scrollTop + rect.top - containerRect.top - containerRect.height / 3;
+    scrollContainer.scrollTo({ top: scrollTop, behavior: 'smooth' });
+
+    // Flash a brief selection highlight so the user sees where it is
+    const sel = window.getSelection();
+    if (sel) {
+      sel.removeAllRanges();
+      sel.addRange(range);
+      setTimeout(() => sel.removeAllRanges(), 1500);
+    }
+  }, []);
 
   const handleLanguageModeChange = (mode: string) => {
     setLanguageMode(mode);
@@ -462,10 +635,35 @@ function EditorPageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [languageMode]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
+    if (userPlanRef.current !== "pro") {
+      const text = editorRef.current?.textContent || "";
+      const wc = text.trim().split(/\s+/).filter(w => w.length > 0).length;
+      if (wc > freeWordLimit) {
+        setShowWordLimitModal(true);
+        return;
+      }
+    }
+    // Cancel any pending auto-save so we don't save twice
+    if (autoSaveTimeout.current) {
+      clearTimeout(autoSaveTimeout.current);
+      autoSaveTimeout.current = null;
+    }
     await performAutoSave();
     toast.success("Document saved!");
-  };
+  }, [performAutoSave]);
+
+  // Ctrl+S / Cmd+S to save
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleSave]);
 
   const handleDeleteDoc = async () => {
     if (!deleteDocId) return;
@@ -654,11 +852,10 @@ function EditorPageInner() {
                 onChange={(e) => {
                   setDocumentTitle(e.target.value);
                   documentTitleRef.current = e.target.value;
-                  if (userPlanRef.current === "pro") {
-                    if (autoSaveTimeout.current)
-                      clearTimeout(autoSaveTimeout.current);
-                    autoSaveTimeout.current = setTimeout(performAutoSave, 2000);
-                  }
+                  if (autoSaveTimeout.current)
+                    clearTimeout(autoSaveTimeout.current);
+                  const saveDelay = userPlanRef.current === "pro" ? 2000 : 4000;
+                  autoSaveTimeout.current = setTimeout(performAutoSave, saveDelay);
                 }}
                 className="text-lg font-semibold border-none focus:outline-none focus:bg-gray-50 px-2 py-1 rounded w-48"
               />
@@ -764,11 +961,10 @@ function EditorPageInner() {
 
       {/* MAIN EDITOR CONTAINER */}
       <div className="flex flex-1 overflow-hidden">
-        {/* LEFT SIDEBAR: Documents (Pro only) */}
-        {isPro && (
-          <aside
-            className={`hidden lg:flex flex-col bg-white border-r border-gray-200 overflow-hidden shrink-0 transition-all duration-300 ${sidebarOpen ? "w-64" : "w-10"}`}
-          >
+        {/* LEFT SIDEBAR: Documents */}
+        <aside
+          className={`hidden lg:flex flex-col bg-white border-r border-gray-200 overflow-hidden shrink-0 transition-all duration-300 ${sidebarOpen ? "w-64" : "w-10"}`}
+        >
             <div className="p-3 border-b flex items-center justify-between shrink-0">
               {sidebarOpen && (
                 <h2 className="font-bold text-lg truncate">My Documents</h2>
@@ -779,6 +975,10 @@ function EditorPageInner() {
                 {sidebarOpen && (
                   <button
                     onClick={() => {
+                      if (!isPro && documents.length >= freeDocLimit) {
+                        setShowUpgradeModal(true);
+                        return;
+                      }
                       if (editorRef.current) editorRef.current.innerHTML = "";
                       const newTitle = "Untitled Document";
                       setDocumentTitle(newTitle);
@@ -929,83 +1129,72 @@ function EditorPageInner() {
 
             {sidebarOpen && !docsLoading && (
               <div className="p-3 border-t shrink-0">
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
-                  <span>{documents.length} / 100 documents</span>
-                  {documents.length >= 90 && (
-                    <span
-                      className={
-                        documents.length >= 100
-                          ? "text-red-500 font-semibold"
-                          : "text-yellow-600 font-semibold"
-                      }
-                    >
-                      {documents.length >= 100
-                        ? "Limit reached"
-                        : "Almost full"}
-                    </span>
-                  )}
-                </div>
-                <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${documents.length >= 100 ? "bg-red-500" : documents.length >= 90 ? "bg-yellow-500" : "bg-primary"}`}
-                    style={{
-                      width: `${Math.min((documents.length / 100) * 100, 100)}%`,
-                    }}
-                  />
-                </div>
+                {(() => {
+                  const docLimit = isPro ? 100 : freeDocLimit;
+                  const atLimit = documents.length >= docLimit;
+                  const nearLimit = isPro ? documents.length >= 90 : documents.length >= freeDocLimit - 1;
+                  return (
+                    <>
+                      <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+                        <span>{documents.length} / {docLimit} documents</span>
+                        {atLimit ? (
+                          <span className="text-red-500 font-semibold">Limit reached</span>
+                        ) : nearLimit ? (
+                          <span className="text-yellow-600 font-semibold">Almost full</span>
+                        ) : null}
+                      </div>
+                      <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${atLimit ? "bg-red-500" : nearLimit ? "bg-yellow-500" : "bg-primary"}`}
+                          style={{
+                            width: `${Math.min((documents.length / docLimit) * 100, 100)}%`,
+                          }}
+                        />
+                      </div>
+                      {!isPro && atLimit && (
+                        <button
+                          onClick={() => setShowUpgradeModal(true)}
+                          className="mt-2 text-xs text-primary font-semibold cursor-pointer hover:underline"
+                        >
+                          Upgrade for unlimited →
+                        </button>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             )}
 
             {!sidebarOpen && <div className="flex-1" />}
 
-            {!sidebarOpen && !docsLoading && (
-              <div
-                className="flex items-center justify-center py-3 border-t shrink-0"
-                title={`${documents.length} of 100 documents`}
-              >
-                <svg width="34" height="34" viewBox="0 0 34 34">
-                  <circle
-                    cx="17"
-                    cy="17"
-                    r="13"
-                    fill="none"
-                    stroke="#e5e7eb"
-                    strokeWidth="3"
-                  />
-                  <circle
-                    cx="17"
-                    cy="17"
-                    r="13"
-                    fill="none"
-                    stroke={
-                      documents.length >= 100
-                        ? "#ef4444"
-                        : documents.length >= 90
-                          ? "#eab308"
-                          : "#008751"
-                    }
-                    strokeWidth="3"
-                    strokeDasharray={`${2 * Math.PI * 13}`}
-                    strokeDashoffset={`${2 * Math.PI * 13 * (1 - documents.length / 100)}`}
-                    strokeLinecap="round"
-                    transform="rotate(-90 17 17)"
-                  />
-                  <text
-                    x="17"
-                    y="17"
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                    fontSize={documents.length >= 100 ? "7" : "9"}
-                    fontWeight="600"
-                    fill="#374151"
-                  >
-                    {documents.length}
-                  </text>
-                </svg>
-              </div>
-            )}
+            {!sidebarOpen && !docsLoading && (() => {
+              const docLimit = isPro ? 100 : freeDocLimit;
+              const atLimit = documents.length >= docLimit;
+              const nearLimit = isPro ? documents.length >= 90 : documents.length >= freeDocLimit - 1;
+              return (
+                <div
+                  className="flex items-center justify-center py-3 border-t shrink-0"
+                  title={`${documents.length} of ${docLimit} documents`}
+                >
+                  <svg width="34" height="34" viewBox="0 0 34 34">
+                    <circle cx="17" cy="17" r="13" fill="none" stroke="#e5e7eb" strokeWidth="3" />
+                    <circle
+                      cx="17" cy="17" r="13" fill="none"
+                      stroke={atLimit ? "#ef4444" : nearLimit ? "#eab308" : "#008751"}
+                      strokeWidth="3"
+                      strokeDasharray={`${2 * Math.PI * 13}`}
+                      strokeDashoffset={`${2 * Math.PI * 13 * (1 - documents.length / docLimit)}`}
+                      strokeLinecap="round"
+                      transform="rotate(-90 17 17)"
+                    />
+                    <text x="17" y="17" textAnchor="middle" dominantBaseline="central" fontSize={atLimit ? "7" : "9"} fontWeight="600" fill="#374151">
+                      {documents.length}
+                    </text>
+                  </svg>
+                </div>
+              );
+            })()}
           </aside>
-        )}
 
         {/* CENTER: EDITOR */}
         <main className="flex-1 flex flex-col overflow-hidden">
@@ -1017,7 +1206,9 @@ function EditorPageInner() {
                 <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <span className="text-gray-600">{wordCount} {wordCount !== 1 ? "words" : "word"}</span>
+                <span className={!isPro && wordCount > freeWordLimit ? "text-red-500 font-semibold" : "text-gray-600"}>
+                  {wordCount} {!isPro ? `/ ${freeWordLimit.toLocaleString()}` : ""} {wordCount !== 1 ? "words" : "word"}
+                </span>
               </div>
 
               <div className="hidden md:flex items-center gap-2">
@@ -1137,10 +1328,10 @@ function EditorPageInner() {
                 )}
               </div>
 
-              {/* Save (Pro only) */}
+              {/* Save */}
               <button
-                onClick={isPro ? handleSave : () => setShowUpgradeModal(true)}
-                className={`hidden md:flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg cursor-pointer hover:bg-primaryHover transition text-sm font-semibold ${!isPro ? "opacity-50 cursor-not-allowed" : ""}`}
+                onClick={handleSave}
+                className="hidden md:flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg cursor-pointer hover:bg-primaryHover transition text-sm font-semibold"
               >
                 <svg
                   className="w-4 h-4"
@@ -1224,6 +1415,7 @@ function EditorPageInner() {
                         return (
                           <div
                             key={index}
+                            onClick={() => scrollToIssue(issue)}
                             className={`border-2 ${colors.border} rounded-lg p-4 cursor-pointer hover:shadow-md transition`}
                           >
                             <div className="flex items-start justify-between mb-2">
@@ -1252,14 +1444,22 @@ function EditorPageInner() {
                             <p className="text-sm text-gray-600">
                               {issue.message}
                             </p>
-                            {!issue.isCorrect && (
-                              <div className="mt-3 pt-3 border-t">
-                                <div className="text-xs text-gray-500 mb-1">
-                                  Suggestion:
+                            {!issue.isCorrect && issue.suggestion && (
+                              <div className="mt-3 pt-3 border-t flex items-center justify-between gap-2">
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">
+                                    Suggestion:
+                                  </div>
+                                  <div className="font-semibold text-gray-900">
+                                    {issue.suggestion}
+                                  </div>
                                 </div>
-                                <div className="font-semibold text-gray-900">
-                                  {issue.suggestion}
-                                </div>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); applySuggestion(issue); }}
+                                  className="shrink-0 px-3 py-1.5 bg-primary text-white text-xs font-semibold rounded-md hover:bg-primaryHover transition cursor-pointer"
+                                >
+                                  Fix
+                                </button>
                               </div>
                             )}
                           </div>
@@ -1372,8 +1572,8 @@ function EditorPageInner() {
 
           {/* Save */}
           <button
-            onClick={isPro ? handleSave : () => setShowUpgradeModal(true)}
-            className={`flex items-center gap-1.5 px-3 py-2 bg-primary text-white rounded-lg cursor-pointer hover:bg-primaryHover transition text-sm font-semibold ${!isPro ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={handleSave}
+            className="flex items-center gap-1.5 px-3 py-2 bg-primary text-white rounded-lg cursor-pointer hover:bg-primaryHover transition text-sm font-semibold"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
@@ -1420,7 +1620,7 @@ function EditorPageInner() {
                   {issues.map((issue, index) => {
                     const colors = getIssueColors(issue.type);
                     return (
-                      <div key={index} className={`border-2 ${colors.border} rounded-lg p-4`}>
+                      <div key={index} onClick={() => { setShowIssuesSheet(false); setTimeout(() => scrollToIssue(issue), 300); }} className={`border-2 ${colors.border} rounded-lg p-4 cursor-pointer`}>
                         <div className="flex items-start justify-between mb-2">
                           <div className={`font-semibold ${colors.text} text-sm uppercase`}>{issue.type}</div>
                           {issue.isCorrect && (
@@ -1432,9 +1632,17 @@ function EditorPageInner() {
                         <p className="text-gray-700 font-mono text-sm mb-2">&quot;{issue.text}&quot;</p>
                         <p className="text-sm text-gray-600">{issue.message}</p>
                         {!issue.isCorrect && issue.suggestion && (
-                          <div className="mt-3 pt-3 border-t">
-                            <div className="text-xs text-gray-500 mb-1">Suggestion:</div>
-                            <div className="font-semibold text-gray-900">{issue.suggestion}</div>
+                          <div className="mt-3 pt-3 border-t flex items-center justify-between gap-2">
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Suggestion:</div>
+                              <div className="font-semibold text-gray-900">{issue.suggestion}</div>
+                            </div>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); applySuggestion(issue); }}
+                              className="shrink-0 px-3 py-1.5 bg-primary text-white text-xs font-semibold rounded-md hover:bg-primaryHover transition cursor-pointer"
+                            >
+                              Fix
+                            </button>
                           </div>
                         )}
                       </div>
@@ -1655,6 +1863,50 @@ function EditorPageInner() {
                 className="w-full border border-gray-300 py-3 rounded-lg cursor-pointer hover:bg-gray-50 transition font-semibold"
               >
                 Wait Until Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Word Limit Modal (Free users) */}
+      {showWordLimitModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-8">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold mb-2">Word Limit Reached</h3>
+              <p className="text-gray-600">
+                Free documents are limited to {freeWordLimit.toLocaleString()} words.
+                You&apos;re currently at <span className="font-semibold">{wordCount.toLocaleString()}</span> words.
+              </p>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <p className="text-sm text-gray-600">
+                Upgrade to Pro for unlimited word counts, up to 100 documents, and more.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  setShowWordLimitModal(false);
+                  setShowUpgradeModal(true);
+                }}
+                className="w-full bg-primary text-white py-4 rounded-lg cursor-pointer font-bold hover:bg-primaryHover transition"
+              >
+                Upgrade to Pro
+              </button>
+              <button
+                onClick={() => setShowWordLimitModal(false)}
+                className="w-full border border-gray-300 py-3 rounded-lg cursor-pointer hover:bg-gray-50 transition font-semibold"
+              >
+                Keep Editing
               </button>
             </div>
           </div>
