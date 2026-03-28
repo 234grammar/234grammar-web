@@ -39,7 +39,7 @@ export default function Home() {
     const tick = (now: number) => {
       const p = Math.min((now - startTime) / duration, 1);
       const eased = 1 - Math.pow(1 - p, 2.5);
-      setCounts({ checks: Math.round(eased * 100), modes: Math.round(eased * 3) });
+      setCounts({ checks: Math.round(eased * 50), modes: Math.round(eased * 3) });
       if (p < 1) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
@@ -48,7 +48,7 @@ export default function Home() {
   const faqs = [
     {
       q: "How is this different from other platforms?",
-      a: "234Grammar understands Nigerian English expressions like \"I'm coming\" and supports Pidgin grammar checking. Plus, you pay in naira (₦1,500 vs ₦20,000+) with your regular bank card — no virtual dollar cards needed.",
+      a: "234Grammar understands Nigerian English expressions like \"I'm coming\" and supports Pidgin grammar checking — all completely free with unlimited checks. Pro features start at just ₦1,500/month, paid in naira with your regular bank card.",
     },
     {
       q: "Can I really use it offline?",
@@ -56,7 +56,7 @@ export default function Home() {
     },
     {
       q: "Do you really support Pidgin?",
-      a: "Yes! Free tier validates basic Pidgin grammar structures. Pro tier includes enhanced Pidgin checking with style suggestions. Coming soon: Pidgin ↔ English translation for Pro users.",
+      a: "Yes! Full Pidgin grammar checking is available to everyone — vocabulary recognition, structure validation, and style suggestions. Coming soon: Pidgin ↔ English translation.",
     },
     {
       q: "How do I pay?",
@@ -126,7 +126,7 @@ export default function Home() {
             </h1>
 
             <p className="hero-fade hero-fade-1 text-lg text-ink/55 mb-8 max-w-sm leading-relaxed">
-              For just <strong className="text-ink font-semibold">₦1,500/month</strong>, check your grammar in Nigerian English, Standard English, or Pidgin. No dollar cards. No wahala.
+              Check your grammar in Nigerian English, Standard English, or Pidgin — <strong className="text-ink font-semibold">completely free</strong>. No limits. No dollar cards. No wahala.
             </p>
 
             <div className="hero-fade hero-fade-2 flex flex-col sm:flex-row gap-3 mb-8">
@@ -141,7 +141,7 @@ export default function Home() {
             </div>
 
             <div className="hero-fade hero-fade-3 flex flex-wrap gap-5 text-sm text-ink/45">
-              {["Pay in Naira", "No login for basic use", "Works offline"].map((item) => (
+              {["Unlimited free checks", "No login for basic use", "Works offline"].map((item) => (
                 <span key={item} className="flex items-center gap-1.5">
                   <IoIosCheckmarkCircle className="text-primary w-4 h-4 shrink-0" />
                   {item}
@@ -220,7 +220,7 @@ export default function Home() {
               <div className="font-display text-3xl md:text-4xl text-gold tabular-nums">
                 {statsVisible ? counts.checks : 0}
               </div>
-              <div className="text-white/40 text-sm mt-1.5">Free checks/month</div>
+              <div className="text-white/40 text-sm mt-1.5">Free documents</div>
             </div>
             <div data-reveal="up" data-delay="2">
               <div className="font-display text-3xl md:text-4xl text-gold">₦1,500</div>
@@ -533,7 +533,7 @@ export default function Home() {
               <div className="font-display text-5xl text-ink mb-1">₦0</div>
               <p className="text-ink/35 text-sm mb-8">Forever free</p>
               <ul className="space-y-3 mb-8">
-                {["100 grammar checks per month", "Nigerian English validation", "Basic Pidgin support", "Works offline", "No login required"].map((item, i) => (
+                {["Unlimited grammar checks", "Nigerian English validation", "Full Pidgin support", "50 document saves", "Export to PDF, DOCX, TXT", "Works offline", "No login required"].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-sm text-ink/65">
                     <IoIosCheckmarkCircle className="text-primary w-4 h-4 shrink-0" />{item}
                   </li>
@@ -556,13 +556,11 @@ export default function Home() {
               <p className="text-white/35 text-sm mb-8">Billed monthly · Cancel anytime</p>
               <ul className="space-y-3 mb-8">
                 {[
-                  { text: "Unlimited grammar checks", bold: true },
-                  { text: "All Free features", bold: false },
-                  { text: "Advanced Nigerian English detection", bold: false },
-                  { text: "Enhanced Pidgin grammar checking", bold: false },
-                  { text: "Document history (100 documents)", bold: false },
-                  { text: "Auto-save & cloud sync", bold: false },
-                  { text: "Export to PDF, DOCX, TXT", bold: false },
+                  { text: "Everything in Free", bold: true },
+                  { text: "100 document saves", bold: false },
+                  { text: "AI-powered rewrites (coming soon)", bold: false },
+                  { text: "Pidgin ↔ English translation (coming soon)", bold: false },
+                  { text: "Tone detection (coming soon)", bold: false },
                   { text: "Priority support", bold: false },
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-sm">

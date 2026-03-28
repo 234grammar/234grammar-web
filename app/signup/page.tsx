@@ -169,7 +169,7 @@ export default function SignupPage() {
                   {activePlan === "free" ? (
                     <div className="bg-white rounded-2xl p-8 ring-1 ring-ink/10">
                       <h2 className="font-display text-3xl text-ink mb-1">Create Free Account</h2>
-                      <p className="text-ink/45 text-sm mb-6">Start with 100 checks per month. No card required.</p>
+                      <p className="text-ink/45 text-sm mb-6">Unlimited grammar checks. No card required.</p>
                       <form onSubmit={handleFreeSignup} className="space-y-5">
                         <div>
                           <label htmlFor="freeEmail" className="block text-xs font-semibold uppercase tracking-wide text-ink/50 mb-2">Email Address</label>
@@ -282,11 +282,12 @@ export default function SignupPage() {
                       <h3 className="font-semibold text-ink mb-6">What&apos;s Included in Free</h3>
                       <ul className="space-y-4 mb-8">
                         {[
-                          { title: "100 Grammar Checks/Month", desc: "Perfect for casual writing" },
+                          { title: "Unlimited Grammar Checks", desc: "No limits, check as much as you want" },
                           { title: "Nigerian English Support", desc: "Understands \"I'm coming\" and local expressions" },
-                          { title: "Basic Pidgin Validation", desc: "Won't flag Pidgin as errors" },
+                          { title: "Full Pidgin Support", desc: "Grammar checking and style suggestions" },
+                          { title: "50 Document Saves", desc: "Auto-save, search, and access anywhere" },
+                          { title: "Export to PDF, DOCX, TXT", desc: "Download your work in any format" },
                           { title: "Works Offline", desc: "Grammar checking runs in your browser" },
-                          { title: "Privacy-First", desc: "Your writing stays on your device" },
                         ].map((item, i) => (
                           <li key={i} className="flex items-start gap-3">
                             <IoIosCheckmarkCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
@@ -300,7 +301,7 @@ export default function SignupPage() {
                       <div className="pt-6 border-t border-ink/8">
                         <p className="text-xs text-ink/45 mb-3"><strong className="text-ink font-semibold">Want more?</strong> Upgrade to Pro anytime for:</p>
                         <ul className="text-xs text-ink/55 space-y-2">
-                          {["Unlimited checks", "Document storage & sync", "Advanced Pidgin support", "Export to PDF/DOCX"].map((item, i) => (
+                          {["100 document saves", "AI-powered rewrites (coming soon)", "Pidgin ↔ English translation (coming soon)", "Priority support"].map((item, i) => (
                             <li key={i} className="flex items-center gap-2">
                               <span className="text-primary">→</span>{item}
                             </li>
@@ -316,11 +317,11 @@ export default function SignupPage() {
                       </div>
                       <ul className="space-y-4 mb-8">
                         {[
-                          { title: "Unlimited Grammar Checks", desc: "No monthly limits" },
-                          { title: "Everything in Free", desc: "Nigerian English, Pidgin, offline mode" },
-                          { title: "Document Storage (100 docs)", desc: "Auto-save, search, access anywhere" },
-                          { title: "Advanced Pidgin Checking", desc: "Grammar corrections and style suggestions" },
-                          { title: "Export Documents", desc: "Download as PDF, DOCX, or TXT" },
+                          { title: "Everything in Free", desc: "Unlimited checks, Pidgin, Nigerian English, exports" },
+                          { title: "100 Document Saves", desc: "Double your free tier storage" },
+                          { title: "AI-Powered Rewrites", desc: "Smart suggestions for clarity (coming soon)" },
+                          { title: "Pidgin ↔ English Translation", desc: "Instant translation (coming soon)" },
+                          { title: "Tone Detection", desc: "Match your writing style (coming soon)" },
                           { title: "Priority Support", desc: "Email support within 24 hours" },
                         ].map((item, i) => (
                           <li key={i} className="flex items-start gap-3">

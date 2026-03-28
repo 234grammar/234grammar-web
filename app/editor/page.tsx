@@ -257,16 +257,12 @@ function EditorPageInner() {
   const currentDocIdRef = useRef<string | null>(null);
   const documentTitleRef = useRef("Untitled Document");
   const userPlanRef = useRef("free");
-  const checksUsedRef = useRef(0);
   const lastCheckedTextRef = useRef<string>("");
 
   const [currentDocId, setCurrentDocId] = useState<string | null>(null);
   const [userPlan, setUserPlan] = useState("free");
   const [userEmail, setUserEmail] = useState("");
-  const [checksUsed, setChecksUsed] = useState(0);
-  const checksLimit = 100;
-  const freeDocLimit = 3;
-  const freeWordLimit = 1500;
+  const freeDocLimit = 50;
   const [languageMode, setLanguageMode] = useState("nigerian-english");
   const [documentTitle, setDocumentTitle] = useState("Untitled Document");
   const [saveStatus, setSaveStatus] = useState("Saved");
@@ -288,12 +284,7 @@ function EditorPageInner() {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isUpgrading, setIsUpgrading] = useState(false);
-  const [showWarningModal, setShowWarningModal] = useState(false);
-  const [showLimitModal, setShowLimitModal] = useState(false);
   const [showIssuesSheet, setShowIssuesSheet] = useState(false);
-  const [showWordLimitModal, setShowWordLimitModal] = useState(false);
-  const [warningChecks, setWarningChecks] = useState(80);
-  const [resetDays, setResetDays] = useState(12);
 
   const isPro = userPlan === "pro";
 
@@ -301,36 +292,22 @@ function EditorPageInner() {
     const modeParam = searchParams.get("mode");
     if (modeParam) setLanguageMode(modeParam);
 
-    // Days until month reset
-    const now = new Date();
-    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    setResetDays(
-      Math.ceil((nextMonth.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
-    );
-
     // Load plan from Supabase; fall back to localStorage cache
     async function loadUserData() {
       const cachedPlan = localStorage.getItem("userPlan") || "free";
-      const cachedChecks = parseInt(localStorage.getItem("checksUsed") || "0");
       setUserPlan(cachedPlan);
-      setChecksUsed(cachedChecks);
-      checksUsedRef.current = cachedChecks;
 
       try {
         const res = await fetch("/api/user/preferences");
         if (res.ok) {
           const data = await res.json();
           const plan = data.plan ?? "free";
-          const checks = data.checks_used ?? 0;
           const defaultMode = data.mode ?? "nigerian-english";
           setUserPlan(plan);
           userPlanRef.current = plan;
-          setChecksUsed(checks);
-          checksUsedRef.current = checks;
           setUserEmail(data.email ?? "");
           if (!modeParam) setLanguageMode(defaultMode);
           localStorage.setItem("userPlan", plan);
-          localStorage.setItem("checksUsed", String(checks));
 
           setDocsLoading(true);
           const docsRes = await fetch("/api/documents");
@@ -405,37 +382,10 @@ function EditorPageInner() {
   }, [unsavedChanges]);
 
   const checkGrammarWithHarper = useCallback(
-    async (text: string, used: number, plan: string, mapOffset?: (pos: number) => number) => {
-      // Skip counting if the text hasn't changed since the last check
-      const textChanged = text !== lastCheckedTextRef.current;
+    async (text: string, mapOffset?: (pos: number) => number) => {
+      // Skip if the text hasn't changed since the last check
+      if (text === lastCheckedTextRef.current) return;
       lastCheckedTextRef.current = text;
-
-      let newUsed = used;
-
-      if (plan === "free" && textChanged) {
-        newUsed = used + 1;
-        localStorage.setItem("checksUsed", String(newUsed));
-        setChecksUsed(newUsed);
-        checksUsedRef.current = newUsed;
-
-        if (newUsed === 80) {
-          setWarningChecks(newUsed);
-          setShowWarningModal(true);
-        } else if (newUsed >= 110) {
-          setShowLimitModal(true);
-          if (editorRef.current) editorRef.current.contentEditable = "false";
-          return;
-        }
-
-        // Sync check count to Supabase (fire-and-forget)
-        fetch("/api/user/checks", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ checksUsed: newUsed }),
-        }).catch(() => {
-          /* ignore — not critical */
-        });
-      }
 
       if (!text.trim()) {
         setIssues([]);
@@ -499,11 +449,6 @@ function EditorPageInner() {
     const text = editorRef.current?.textContent || "";
     if (!content.trim() && !text.trim()) return;
 
-    // Don't auto-save if free user exceeds word limit
-    if (userPlanRef.current !== "pro") {
-      const wc = text.trim().split(/\s+/).filter(w => w.length > 0).length;
-      if (wc > 1500) return;
-    }
     setSaveStatus("Saving...");
     setSaveStatusColor("text-gray-400");
     const words = text
@@ -542,7 +487,7 @@ function EditorPageInner() {
       // Free users: check doc limit before creating
       if (userPlanRef.current !== "pro") {
         const currentDocs = await fetch("/api/documents").then(r => r.ok ? r.json() : []);
-        if (Array.isArray(currentDocs) && currentDocs.length >= 3) {
+        if (Array.isArray(currentDocs) && currentDocs.length >= freeDocLimit) {
           setSaveStatus("Doc limit reached");
           setSaveStatusColor("text-red-500");
           return;
@@ -577,14 +522,6 @@ function EditorPageInner() {
     setWordCount(words.length);
     setReadingTime(Math.ceil(words.length / 250));
 
-    // Word limit for free users
-    if (userPlanRef.current !== "pro" && words.length > freeWordLimit) {
-      setSaveStatus(`Over ${freeWordLimit} word limit`);
-      setSaveStatusColor("text-red-500");
-      setShowWordLimitModal(true);
-      return; // Don't auto-save or grammar check over-limit text
-    }
-
     setUnsavedChanges(true);
     setSaveStatus("Unsaved changes");
     setSaveStatusColor("text-yellow-600");
@@ -594,12 +531,11 @@ function EditorPageInner() {
       // Re-build offset map at lint time (text may have changed during debounce)
       if (!editorRef.current) return;
       const fresh = buildOffsetMap(editorRef.current);
-      checkGrammarWithHarper(fresh.cleanText, checksUsedRef.current, userPlanRef.current, fresh.toRawOffset);
+      checkGrammarWithHarper(fresh.cleanText, fresh.toRawOffset);
     }, 1000);
 
     if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
-    const delay = userPlanRef.current === "pro" ? 2000 : 4000;
-    autoSaveTimeout.current = setTimeout(performAutoSave, delay);
+    autoSaveTimeout.current = setTimeout(performAutoSave, 2000);
   }, [checkGrammarWithHarper, performAutoSave]);
 
   const applySuggestion = useCallback((issue: Issue) => {
@@ -656,13 +592,12 @@ function EditorPageInner() {
       setSaveStatus("Unsaved changes");
       setSaveStatusColor("text-yellow-600");
       if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
-      const delay = userPlanRef.current === "pro" ? 2000 : 4000;
-      autoSaveTimeout.current = setTimeout(performAutoSave, delay);
+      autoSaveTimeout.current = setTimeout(performAutoSave, 2000);
       if (grammarTimeout.current) clearTimeout(grammarTimeout.current);
       grammarTimeout.current = setTimeout(() => {
         if (!editorRef.current) return;
         const fresh = buildOffsetMap(editorRef.current);
-        checkGrammarWithHarper(fresh.cleanText, checksUsedRef.current, userPlanRef.current, fresh.toRawOffset);
+        checkGrammarWithHarper(fresh.cleanText, fresh.toRawOffset);
       }, 1000);
     };
 
@@ -754,19 +689,11 @@ function EditorPageInner() {
     if (!editorRef.current) return;
     const { cleanText, toRawOffset } = buildOffsetMap(editorRef.current);
     if (!cleanText.trim()) return;
-    checkGrammarWithHarper(cleanText, checksUsed, userPlan, toRawOffset);
+    checkGrammarWithHarper(cleanText, toRawOffset);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [languageMode]);
 
   const handleSave = useCallback(async () => {
-    if (userPlanRef.current !== "pro") {
-      const text = editorRef.current?.textContent || "";
-      const wc = text.trim().split(/\s+/).filter(w => w.length > 0).length;
-      if (wc > freeWordLimit) {
-        setShowWordLimitModal(true);
-        return;
-      }
-    }
     // Cancel any pending auto-save so we don't save twice
     if (autoSaveTimeout.current) {
       clearTimeout(autoSaveTimeout.current);
@@ -915,7 +842,6 @@ function EditorPageInner() {
     const supabase = createClient();
     await supabase.auth.signOut();
     localStorage.removeItem("userPlan");
-    localStorage.removeItem("checksUsed");
     window.location.href = "/";
   };
 
@@ -943,13 +869,6 @@ function EditorPageInner() {
   };
 
   const errorIssues = issues.filter((i) => !i.isCorrect);
-  const usagePercent = Math.min((checksUsed / checksLimit) * 100, 100);
-  const usageBarColor =
-    usagePercent >= 80
-      ? "bg-red-500"
-      : usagePercent >= 50
-        ? "bg-yellow-500"
-        : "bg-primary";
 
   return (
     <div className="bg-gray-50 text-gray-900 font-sans h-screen overflow-hidden flex flex-col">
@@ -977,8 +896,7 @@ function EditorPageInner() {
                   documentTitleRef.current = e.target.value;
                   if (autoSaveTimeout.current)
                     clearTimeout(autoSaveTimeout.current);
-                  const saveDelay = userPlanRef.current === "pro" ? 2000 : 4000;
-                  autoSaveTimeout.current = setTimeout(performAutoSave, saveDelay);
+                  autoSaveTimeout.current = setTimeout(performAutoSave, 2000);
                 }}
                 className="text-lg font-semibold border-none focus:outline-none focus:bg-gray-50 px-2 py-1 rounded w-48"
               />
@@ -1255,7 +1173,7 @@ function EditorPageInner() {
                 {(() => {
                   const docLimit = isPro ? 100 : freeDocLimit;
                   const atLimit = documents.length >= docLimit;
-                  const nearLimit = isPro ? documents.length >= 90 : documents.length >= freeDocLimit - 1;
+                  const nearLimit = isPro ? documents.length >= 90 : documents.length >= freeDocLimit - 5;
                   return (
                     <>
                       <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
@@ -1279,7 +1197,7 @@ function EditorPageInner() {
                           onClick={() => setShowUpgradeModal(true)}
                           className="mt-2 text-xs text-primary font-semibold cursor-pointer hover:underline"
                         >
-                          Upgrade for unlimited →
+                          Upgrade for more →
                         </button>
                       )}
                     </>
@@ -1293,7 +1211,7 @@ function EditorPageInner() {
             {!sidebarOpen && !docsLoading && (() => {
               const docLimit = isPro ? 100 : freeDocLimit;
               const atLimit = documents.length >= docLimit;
-              const nearLimit = isPro ? documents.length >= 90 : documents.length >= freeDocLimit - 1;
+              const nearLimit = isPro ? documents.length >= 90 : documents.length >= freeDocLimit - 5;
               return (
                 <div
                   className="flex items-center justify-center py-3 border-t shrink-0"
@@ -1329,8 +1247,8 @@ function EditorPageInner() {
                 <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <span className={!isPro && wordCount > freeWordLimit ? "text-red-500 font-semibold" : "text-gray-600"}>
-                  {wordCount} {!isPro ? `/ ${freeWordLimit.toLocaleString()}` : ""} {wordCount !== 1 ? "words" : "word"}
+                <span className="text-gray-600">
+                  {wordCount} {wordCount !== 1 ? "words" : "word"}
                 </span>
               </div>
 
@@ -1375,15 +1293,11 @@ function EditorPageInner() {
                 <option value="pidgin">🗣 Pidgin</option>
               </select>
 
-              {/* Export (Pro only) */}
+              {/* Export */}
               <div className="relative hidden md:block" data-export-menu>
                 <button
-                  onClick={
-                    isPro
-                      ? () => setShowExportMenu(!showExportMenu)
-                      : () => setShowUpgradeModal(true)
-                  }
-                  className={`flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition text-sm font-semibold ${!isPro ? "opacity-50 cursor-not-allowed" : ""}`}
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition text-sm font-semibold"
                   data-export-menu
                 >
                   <svg
@@ -1414,7 +1328,7 @@ function EditorPageInner() {
                     />
                   </svg>
                 </button>
-                {showExportMenu && isPro && (
+                {showExportMenu && (
                   <div
                     className="absolute right-0 mt-1 w-44 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50"
                     data-export-menu
@@ -1595,51 +1509,11 @@ function EditorPageInner() {
             </aside>
           </div>
 
-          {/* Bottom Bar: Usage (Free plan, desktop only) */}
-          {!isPro && (
-            <div className="hidden md:flex bg-white border-t border-gray-200 px-6 py-3 items-center justify-between shrink-0">
-              <div className="flex items-center gap-4">
-                <div className="text-sm">
-                  <span className="font-semibold">{checksUsed}</span>
-                  <span className="text-gray-600">/ 100 checks this month</span>
-                </div>
-
-                <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full ${usageBarColor} transition-all`}
-                    style={{ width: `${usagePercent}%` }}
-                  />
-                </div>
-              </div>
-
-              <button
-                onClick={() => setShowUpgradeModal(true)}
-                className="text-sm text-primary font-semibold cursor-pointer hover:underline"
-              >
-                Upgrade for unlimited →
-              </button>
-            </div>
-          )}
         </main>
       </div>
 
       {/* MOBILE BOTTOM ACTION BAR */}
       <div className="md:hidden shrink-0 bg-white border-t border-gray-200 z-40">
-        {/* Free usage bar */}
-        {!isPro && (
-          <div className="px-4 pt-2.5 pb-0 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <span><span className="font-semibold text-gray-800">{checksUsed}</span> / 100 checks</span>
-              <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                <div className={`h-full ${usageBarColor} transition-all`} style={{ width: `${usagePercent}%` }} />
-              </div>
-            </div>
-            <button onClick={() => setShowUpgradeModal(true)} className="text-xs text-primary font-semibold cursor-pointer hover:underline shrink-0">
-              Upgrade →
-            </button>
-          </div>
-        )}
-
         <div className="px-4 py-3 flex items-center gap-3">
           {/* Issues button */}
           <button
@@ -1666,8 +1540,8 @@ function EditorPageInner() {
           {/* Export */}
           <div className="relative" data-export-menu>
             <button
-              onClick={isPro ? () => setShowExportMenu(!showExportMenu) : () => setShowUpgradeModal(true)}
-              className={`flex items-center gap-1.5 px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold hover:bg-gray-50 transition cursor-pointer ${!isPro ? 'opacity-50' : ''}`}
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold hover:bg-gray-50 transition cursor-pointer"
               data-export-menu
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" data-export-menu>
@@ -1675,7 +1549,7 @@ function EditorPageInner() {
               </svg>
               Export
             </button>
-            {showExportMenu && isPro && (
+            {showExportMenu && (
               <div className="absolute bottom-full right-0 mb-2 w-44 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50" data-export-menu>
                 <button onClick={exportAsTxt} className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 cursor-pointer transition" data-export-menu>
                   <div className="font-semibold">TXT</div>
@@ -1825,18 +1699,18 @@ function EditorPageInner() {
               <div className="space-y-4 mb-8">
                 {[
                   {
-                    title: "Unlimited Grammar Checks",
-                    desc: "No monthly limits",
+                    title: "100 Document Storage",
+                    desc: "Double your free tier limit",
                   },
                   {
-                    title: "Document Storage (100 docs)",
-                    desc: "Auto-save, search, access anywhere",
+                    title: "AI-Powered Rewrites",
+                    desc: "Smart suggestions for clarity (coming soon)",
                   },
                   {
-                    title: "Advanced Pidgin Support",
-                    desc: "Style suggestions and corrections",
+                    title: "Pidgin ↔ English Translation",
+                    desc: "Instant translation between languages (coming soon)",
                   },
-                  { title: "Export Documents", desc: "PDF, DOCX, TXT formats" },
+                  { title: "Priority Support", desc: "Email support within 24 hours" },
                 ].map((item) => (
                   <div key={item.title} className="flex items-start gap-3">
                     <svg
@@ -1876,165 +1750,6 @@ function EditorPageInner() {
         </div>
       )}
 
-      {/* WARNING MODAL (80 checks) */}
-      {showWarningModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-8">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="w-8 h-8 text-yellow-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold mb-2">Running Low on Checks</h3>
-              <p className="text-gray-600">
-                You&apos;ve used <strong>{warningChecks}</strong> of 100 free
-                checks this month.
-              </p>
-            </div>
-
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-green-900 font-semibold mb-2">
-                Upgrade to Pro and get:
-              </p>
-              <ul className="text-sm text-green-800 space-y-1">
-                <li>• Unlimited checks</li>
-                <li>• Document storage</li>
-                <li>• Advanced features</li>
-                <li>• Only ₦1,500/month</li>
-              </ul>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowWarningModal(false)}
-                className="flex-1 border border-gray-300 px-4 py-3 rounded-lg cursor-pointer hover:bg-gray-50 transition font-semibold"
-              >
-                Continue Free
-              </button>
-              <button
-                onClick={() => {
-                  setShowWarningModal(false);
-                  setShowUpgradeModal(true);
-                }}
-                className="flex-1 bg-primary text-white px-4 py-3 rounded-lg cursor-pointer hover:bg-primaryHover transition font-semibold"
-              >
-                Upgrade Now
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* HARD LIMIT MODAL (110 checks) */}
-      {showLimitModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-8">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="w-8 h-8 text-red-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold mb-2">Monthly Limit Reached</h3>
-              <p className="text-gray-600">
-                You&apos;ve used all 110 checks this month (100 + 10 bonus).
-              </p>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <p className="text-sm text-gray-600 mb-3">
-                Your limit resets in:
-              </p>
-              <p className="text-2xl font-bold text-gray-900">
-                {resetDays} days
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <button
-                onClick={() => {
-                  setShowLimitModal(false);
-                  setShowUpgradeModal(true);
-                }}
-                className="w-full bg-primary text-white py-4 rounded-lg text- cursor-pointer font-bold hover:bg-primaryHover transition"
-              >
-                Upgrade to Pro - Unlimited Checks
-              </button>
-              <button
-                onClick={() => setShowLimitModal(false)}
-                className="w-full border border-gray-300 py-3 rounded-lg cursor-pointer hover:bg-gray-50 transition font-semibold"
-              >
-                Wait Until Reset
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Word Limit Modal (Free users) */}
-      {showWordLimitModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-8">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold mb-2">Word Limit Reached</h3>
-              <p className="text-gray-600">
-                Free documents are limited to {freeWordLimit.toLocaleString()} words.
-                You&apos;re currently at <span className="font-semibold">{wordCount.toLocaleString()}</span> words.
-              </p>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <p className="text-sm text-gray-600">
-                Upgrade to Pro for unlimited word counts, up to 100 documents, and more.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <button
-                onClick={() => {
-                  setShowWordLimitModal(false);
-                  setShowUpgradeModal(true);
-                }}
-                className="w-full bg-primary text-white py-4 rounded-lg cursor-pointer font-bold hover:bg-primaryHover transition"
-              >
-                Upgrade to Pro
-              </button>
-              <button
-                onClick={() => setShowWordLimitModal(false)}
-                className="w-full border border-gray-300 py-3 rounded-lg cursor-pointer hover:bg-gray-50 transition font-semibold"
-              >
-                Keep Editing
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Delete Document Confirmation Modal */}
       {deleteDocId && (
