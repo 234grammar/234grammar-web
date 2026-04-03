@@ -30,7 +30,7 @@ export default function AboutPage() {
             <span>🇳🇬</span>
             <span>Made in Nigeria</span>
           </div>
-          <h1 className="font-display text-5xl md:text-7xl mb-6 leading-[1.0] fade-in">
+          <h1 className="font-display text-5xl md:text-7xl mb-6 leading-none fade-in">
             Finally, A Grammar<br />Checker Built for<br /><em className="text-gold">Our English</em>
           </h1>
           <p className="text-xl text-white/60 max-w-2xl mx-auto mb-14 fade-in">
@@ -40,7 +40,7 @@ export default function AboutPage() {
             {[
               { title: "Founded in Lagos", desc: "Built by Nigerians, for Nigerians" },
               { title: "Launched 2026", desc: "First Pidgin grammar checker" },
-              { title: "1000+ Users", desc: "Growing community" },
+              { title: "100% Free", desc: "Grammar + AI tools, no cost" },
             ].map((item, i) => (
               <div key={i} className="flex items-start gap-3">
                 <div className="w-5 h-5 rounded-full bg-gold/20 flex items-center justify-center shrink-0 mt-0.5">
@@ -68,16 +68,16 @@ export default function AboutPage() {
             {[
               {
                 icon: "💳", title: "Payment Frustration",
-                desc: "Trying to pay for Grammarly? Good luck. Virtual dollar cards fail 70% of the time. Exchange rates change daily.",
+                desc: "Most grammar tools charge in dollars. Virtual cards fail. Exchange rates change daily. You shouldn't need a dollar card to check your grammar.",
                 example: "❌ Card declined",
                 exampleNote: "You've probably seen this too many times",
                 bg: "bg-red-50", border: "border-red-100",
               },
               {
                 icon: "🌍", title: "Cultural Disconnect",
-                desc: '"I\'m coming" gets flagged as wrong. "Drop your contact" is an error. These tools don\'t understand us.',
+                desc: '"I\'m coming" gets flagged as wrong. "Drop your contact" is an error. These tools don\'t understand how Nigerians actually write.',
                 example: '"I\'m coming now"',
-                exampleNote: '❌ Grammarly: "Did you mean \'going\'?"',
+                exampleNote: '❌ Other tools: "Did you mean \'going\'?"',
                 exampleNoteColor: "text-red-600",
                 bg: "bg-amber-50", border: "border-amber-100",
               },
@@ -122,16 +122,16 @@ export default function AboutPage() {
                   <strong className="text-ink font-semibold">every grammar checker treated Nigerian English like broken English.</strong>
                 </p>
                 <p>
-                  &ldquo;I&apos;m coming&rdquo; would get flagged. &ldquo;Hold my hand small&rdquo; was an error. I found myself either ignoring suggestions or spending time explaining to the tool how we actually speak.
+                  &ldquo;I&apos;m coming&rdquo; would get flagged. &ldquo;Hold my hand small&rdquo; was an error. &ldquo;Senior man&rdquo; was apparently wrong. I found myself either ignoring every suggestion or rewriting perfectly natural sentences just to make the tool happy.
                 </p>
                 <p>
-                  The final straw? Trying to pay for Grammarly Premium. Three virtual dollar cards. All declined. ₦5,000 in failed transaction fees. Just to check my grammar.
+                  And then there was the payment problem. Dollar pricing. Failed cards. The whole wahala of trying to pay for a tool that doesn&apos;t even understand how you write.
                 </p>
                 <p>
-                  I thought: <strong className="text-ink font-semibold">&ldquo;There has to be a better way.&rdquo;</strong>
+                  I thought: <strong className="text-ink font-semibold">&ldquo;Why am I fighting a tool that&apos;s supposed to help me?&rdquo;</strong>
                 </p>
                 <p>
-                  So I built 234Grammar. A tool that understands how we write. That accepts naira. That doesn&apos;t make you feel like your English is &ldquo;wrong&rdquo; just because it&apos;s Nigerian.
+                  So I built 234Grammar — free, with AI built in, and it actually understands Nigerian English and Pidgin. No more red squiggles under valid expressions. No more dollar cards. Just a tool that works the way we write.
                 </p>
                 <p className="text-primary font-semibold">— Henry, Founder</p>
               </div>
@@ -183,9 +183,9 @@ export default function AboutPage() {
           </p>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { icon: "🎯", title: "Accessibility", desc: "No dollar cards. No payment failures. Just fair naira pricing that actually works." },
-              { icon: "🇳🇬", title: "Cultural Fit", desc: "Built by Nigerians who understand how we speak, write, and communicate." },
-              { icon: "⚡", title: "Quality", desc: "Professional-grade grammar checking without compromising on Nigerian English." },
+              { icon: "🎯", title: "Accessibility", desc: "Free for everyone. No dollar cards. No sign-up required for basic use. Grammar checking that just works." },
+              { icon: "🇳🇬", title: "Cultural Fit", desc: "Built by Nigerians who understand how we speak, write, and communicate — including Pidgin." },
+              { icon: "⚡", title: "Quality", desc: "Professional-grade grammar checking and AI-powered writing tools, without compromising on Nigerian English." },
             ].map((item, i) => (
               <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-8 hover:bg-white/8 transition">
                 <div className="text-3xl mb-4">{item.icon}</div>
@@ -208,9 +208,9 @@ export default function AboutPage() {
           <div className="space-y-4">
             {[
               { color: "bg-primary/10", iconColor: "text-primary", title: "Nigerian English is Valid English", desc: "We don't treat Nigerian expressions as \"errors to fix.\" Your English isn't broken — it's just different. And that's exactly how it should be." },
-              { color: "bg-blue-50", iconColor: "text-blue-600", title: "Privacy is Non-Negotiable", desc: "Your writing is yours. Our grammar engine runs locally in your browser. We don't read your documents. We don't sell your data. Ever." },
+              { color: "bg-blue-50", iconColor: "text-blue-600", title: "Privacy is Non-Negotiable", desc: "Grammar checking runs locally in your browser — your text never leaves your device. AI features only send the text you select. We don't store, read, or sell your writing. Ever." },
               { color: "bg-purple-50", iconColor: "text-purple-600", title: "Built for the Community", desc: "Every feature request matters. We listen to Nigerian writers, students, and creators. This tool exists because of you, and it's shaped by your feedback." },
-              { color: "bg-amber-50", iconColor: "text-amber-600", title: "Fair Pricing, No Games", desc: "₦1,500/month. No hidden fees. No surprise charges. Just honest, transparent pricing that makes sense for Nigerian pockets." },
+              { color: "bg-amber-50", iconColor: "text-amber-600", title: "Free First, Fair Pricing", desc: "Everything you need is free — grammar checking, AI tools, exports. Pro is just ₦1,500/month for extra storage and support. No hidden fees. No dollar cards." },
             ].map((item, i) => (
               <div key={i} className="bg-cream rounded-2xl p-7 ring-1 ring-ink/8 hover:ring-primary/30 transition flex items-start gap-5">
                 <div className={`w-10 h-10 ${item.color} rounded-xl flex items-center justify-center shrink-0`}>
@@ -239,21 +239,21 @@ export default function AboutPage() {
             <div className="space-y-8">
               {[
                 {
-                  status: "COMPLETED", statusBg: "bg-primary/10 text-primary", date: "January 2026",
+                  status: "COMPLETED", statusBg: "bg-primary/10 text-primary", date: "Q1 2026",
                   title: "Phase 1: Foundation", borderColor: "ring-primary/20",
-                  items: ["Rule-based grammar engine for Nigerian English", "Monnify integration for naira payments", "Basic Pidgin validation"],
+                  items: ["Grammar engine for Nigerian English, Standard English, and Pidgin", "Monnify integration for naira payments", "Document saving, auto-save, and export (PDF, DOCX, TXT)"],
                   itemIcon: "✓", itemColor: "text-primary",
                 },
                 {
-                  status: "IN PROGRESS", statusBg: "bg-blue-100 text-blue-700", date: "Q1 2026",
-                  title: "Phase 2: AI Features", borderColor: "ring-primary/40",
-                  items: ["AI-powered rewrites and suggestions", "Pidgin ↔ English translation", "Tone detection and adjustment", "Document collaboration (Pro)"],
-                  itemIcon: "◷", itemColor: "text-blue-600",
+                  status: "COMPLETED", statusBg: "bg-primary/10 text-primary", date: "Q2 2026",
+                  title: "Phase 2: AI Features", borderColor: "ring-primary/20",
+                  items: ["AI-powered rewrites and suggestions", "Pidgin ↔ English translation", "Tone detection and analysis", "Text summarization"],
+                  itemIcon: "✓", itemColor: "text-primary",
                 },
                 {
-                  status: "PLANNED", statusBg: "bg-ink/5 text-ink/40", date: "Q2–Q3 2026",
+                  status: "PLANNED", statusBg: "bg-ink/5 text-ink/40", date: "Q3-Q4 2026",
                   title: "Phase 3: Expansion", borderColor: "ring-ink/10", opacity: "opacity-60",
-                  items: ["Mobile apps (iOS & Android)", "Browser extensions (Chrome, Firefox)", "Support for Ghanaian and Kenyan English", "API for developers"],
+                  items: ["Mobile apps (iOS & Android)", "Browser extensions (Chrome, Firefox)", "Support for other Nigerian languages (Igbo, Yoruba, Hausa, etc...)", "API for developers"],
                   itemIcon: "◷", itemColor: "text-ink/35",
                 },
               ].map((phase, i) => (
@@ -311,10 +311,10 @@ export default function AboutPage() {
       <section className="py-20 md:py-28 bg-deepGreen text-white">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <p className="text-gold text-xs font-semibold uppercase tracking-widest mb-6">Get Started</p>
-          <h2 className="font-display text-4xl md:text-6xl mb-6 leading-[1.0]">
+          <h2 className="font-display text-4xl md:text-6xl mb-6 leading-none">
             Ready to Write Better<br /><em className="text-gold">Nigerian English?</em>
           </h2>
-          <p className="text-white/50 mb-10 text-lg">Join 1,000+ Nigerian writers using 234Grammar</p>
+          <p className="text-white/50 mb-10 text-lg">Free grammar checking, AI tools, and Pidgin support — no sign-up required</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/signup" className="bg-gold text-ink px-8 py-4 rounded-xl font-bold hover:bg-yellow-300 transition shadow-xl">
               Start Free — No Card Required

@@ -333,11 +333,10 @@ export default function SignupPage() {
                       </ul>
                       <div className="pt-6 border-t border-ink/8">
                         <div className="bg-ink/5 rounded-xl p-4">
-                          <p className="text-xs font-semibold text-ink mb-2">🚀 Coming Soon:</p>
+                          <p className="text-xs font-semibold text-ink mb-2">✨ Included in Pro:</p>
                           <ul className="text-xs text-ink/55 space-y-1">
-                            <li>• AI-powered rewrites</li>
-                            <li>• Pidgin ↔ English translation</li>
-                            <li>• Tone detection</li>
+                            <li>• 100 document saves</li>
+                            <li>• Priority email support</li>
                           </ul>
                         </div>
                       </div>

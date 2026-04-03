@@ -47,24 +47,28 @@ export default function Home() {
 
   const faqs = [
     {
-      q: "How is this different from other platforms?",
-      a: "234Grammar understands Nigerian English expressions like \"I'm coming\" and supports Pidgin grammar checking — all completely free with unlimited checks. Pro features start at just ₦1,500/month, paid in naira with your regular bank card.",
+      q: "How is this different from other grammar tools?",
+      a: "Most grammar tools flag Nigerian English as errors and don't support Pidgin at all. 234Grammar is built for how Nigerians actually write — with AI rewrites, translation, and tone detection all included for free.",
     },
     {
       q: "Can I really use it offline?",
-      a: "Yes! The grammar engine runs in your browser using WebAssembly. After the first load, no internet connection is needed for basic grammar checking. Document sync requires internet.",
+      a: "Yes! The grammar engine runs in your browser using WebAssembly. After the first load, no internet connection is needed for grammar checking. AI features (rewrite, translate, etc.) and document sync require internet.",
     },
     {
       q: "Do you really support Pidgin?",
-      a: "Yes! Full Pidgin grammar checking is available to everyone — vocabulary recognition, structure validation, and style suggestions. Coming soon: Pidgin ↔ English translation.",
+      a: "Yes! Full Pidgin grammar checking is available to everyone — vocabulary recognition, structure validation, and style suggestions. Plus, you can translate between Pidgin and English right in the editor.",
     },
     {
-      q: "How do I pay?",
-      a: "Pay in naira through Monnify using your debit card, bank transfer, or USSD. No virtual dollar cards needed. Cancel anytime with one click.",
+      q: "How do the AI features work?",
+      a: "Select any text in the editor and a toolbar appears with four options: Rewrite (improves clarity), Summarize, Translate (Pidgin ↔ English), and Tone Detection. All powered by AI and completely free.",
     },
     {
       q: "Is my writing data private?",
-      a: "Yes. Grammar checking happens locally in your browser — your text never leaves your device. Only saved documents (if you choose to save) are stored encrypted on our servers. We never sell or share your writing.",
+      a: "Grammar checking happens locally in your browser — your text never leaves your device. AI features (rewrite, translate, etc.) send only the selected text to process your request. We never store, sell, or share your writing.",
+    },
+    {
+      q: "How do I pay for Pro?",
+      a: "Everything you need is free. Pro (₦1,500/month) just adds more document storage and priority support. Pay in naira through Monnify — card, bank transfer, or USSD. Cancel anytime.",
     },
   ];
 
@@ -574,18 +578,19 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Coming soon teaser */}
+          {/* AI features banner */}
           <div data-reveal="up" className="mt-12 max-w-3xl mx-auto rounded-2xl border border-ink/10 p-8 bg-cream">
             <div className="flex items-start gap-4">
-              <span className="text-3xl">🚀</span>
+              <span className="text-3xl">✨</span>
               <div className="flex-1">
-                <h4 className="font-bold text-ink mb-1">Coming Soon to Pro</h4>
-                <p className="text-ink/45 text-sm mb-5">These features are in development for Pro subscribers:</p>
-                <div className="grid md:grid-cols-3 gap-3">
+                <h4 className="font-bold text-ink mb-1">AI-Powered Writing Tools — Free for Everyone</h4>
+                <p className="text-ink/45 text-sm mb-5">Select any text in the editor to access these tools instantly:</p>
+                <div className="grid md:grid-cols-4 gap-3">
                   {[
-                    { icon: "🤖", title: "AI Rewrites", desc: "Smart suggestions for clarity" },
-                    { icon: "🔄", title: "Translation", desc: "Pidgin ↔ English instantly" },
-                    { icon: "🎯", title: "Tone Detection", desc: "Match your writing style" },
+                    { icon: "✏️", title: "AI Rewrites", desc: "Improve clarity and flow" },
+                    { icon: "📝", title: "Summarize", desc: "Get concise summaries" },
+                    { icon: "🔄", title: "Translation", desc: "Pidgin ↔ English" },
+                    { icon: "🎭", title: "Tone Detection", desc: "Analyze writing tone" },
                   ].map((f, i) => (
                     <div key={i} className="bg-white rounded-xl p-4 border border-ink/10 flex items-start gap-3">
                       <span className="text-xl">{f.icon}</span>

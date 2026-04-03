@@ -216,7 +216,7 @@ export default function LoginPage() {
               </div>
 
               <div className="grid grid-cols-3 gap-4 pt-8 border-t border-ink/10">
-                {[{ val: '1000+', label: 'Active Users' }, { val: '50K+', label: 'Documents' }, { val: '99.9%', label: 'Uptime' }].map((stat, i) => (
+                {[{ val: '100%', label: 'Free' }, { val: '3', label: 'Language Modes' }, { val: '4', label: 'AI Tools' }].map((stat, i) => (
                   <div key={i} className="text-center">
                     <div className="font-display text-2xl text-primary">{stat.val}</div>
                     <div className="text-xs text-ink/40 mt-0.5">{stat.label}</div>
