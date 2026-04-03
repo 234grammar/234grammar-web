@@ -90,6 +90,23 @@ html {
 }
 
 
+/* AI Toolbar */
+@keyframes aiToolbarIn {
+  from { opacity: 0; transform: translateY(6px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes aiResultIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes aiHintSlide {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.ai-toolbar-enter { animation: aiToolbarIn 0.18s ease-out; }
+.ai-result-enter { animation: aiResultIn 0.2s ease-out; }
+.ai-hint-enter { animation: aiHintSlide 0.3s ease-out; }
+
 /* Custom scrollbar */
 .custom-scrollbar::-webkit-scrollbar { width: 8px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
