@@ -533,7 +533,7 @@ export default function Home() {
               <div className="font-display text-5xl text-ink mb-1">₦0</div>
               <p className="text-ink/35 text-sm mb-8">Forever free</p>
               <ul className="space-y-3 mb-8">
-                {["Unlimited grammar checks", "Nigerian English validation", "Full Pidgin support", "50 document saves", "Export to PDF, DOCX, TXT", "Works offline", "No login required"].map((item, i) => (
+                {["Unlimited grammar checks", "Nigerian English validation", "Full Pidgin support", "AI rewrite, summarize & tone", "Pidgin ↔ English translation", "50 document saves", "Export to PDF, DOCX, TXT"].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-sm text-ink/65">
                     <IoIosCheckmarkCircle className="text-primary w-4 h-4 shrink-0" />{item}
                   </li>
@@ -558,9 +558,6 @@ export default function Home() {
                 {[
                   { text: "Everything in Free", bold: true },
                   { text: "100 document saves", bold: false },
-                  { text: "AI-powered rewrites (coming soon)", bold: false },
-                  { text: "Pidgin ↔ English translation (coming soon)", bold: false },
-                  { text: "Tone detection (coming soon)", bold: false },
                   { text: "Priority support", bold: false },
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-sm">

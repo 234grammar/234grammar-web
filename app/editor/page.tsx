@@ -286,6 +286,14 @@ function EditorPageInner() {
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [showIssuesSheet, setShowIssuesSheet] = useState(false);
 
+  // AI Toolbar
+  const [aiToolbar, setAiToolbar] = useState<{ top: number; left: number } | null>(null);
+  const [aiSelectedText, setAiSelectedText] = useState("");
+  const [aiSelectedRange, setAiSelectedRange] = useState<Range | null>(null);
+  const [aiLoading, setAiLoading] = useState<string | null>(null); // action name or null
+  const [aiResult, setAiResult] = useState<{ action: string; text: string } | null>(null);
+  const [aiResultPos, setAiResultPos] = useState<{ top: number; left: number } | null>(null);
+
   const isPro = userPlan === "pro";
 
   useEffect(() => {
@@ -358,10 +366,119 @@ function EditorPageInner() {
       const target = e.target as HTMLElement;
       if (!target.closest("[data-user-menu]")) setShowUserMenu(false);
       if (!target.closest("[data-export-menu]")) setShowExportMenu(false);
+      // Close AI toolbar/result when clicking outside
+      if (!target.closest("[data-ai-toolbar]") && !target.closest("[data-ai-result]")) {
+        setAiToolbar(null);
+        setAiResult(null);
+        setAiResultPos(null);
+      }
     };
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
   }, []);
+
+  // Detect text selection in editor to show AI toolbar
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const scrollContainer = editor.closest('.overflow-y-auto') as HTMLElement | null;
+    const container = scrollContainer || editor;
+
+    const handleMouseUp = (e: MouseEvent) => {
+      // Small delay to let the browser finalize the selection
+      requestAnimationFrame(() => {
+        const sel = window.getSelection();
+        if (!sel || sel.isCollapsed || !sel.rangeCount) return;
+        const range = sel.getRangeAt(0);
+        if (!editor.contains(range.commonAncestorContainer)) return;
+        const text = sel.toString().trim();
+        if (text.length < 3) return;
+        const rect = range.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) return; // invalid rect
+        setAiToolbar({
+          top: rect.top - 44,
+          left: Math.max(8, Math.min(rect.left + rect.width / 2 - 120, window.innerWidth - 280)),
+        });
+        setAiSelectedText(text);
+        setAiSelectedRange(range.cloneRange());
+      });
+    };
+
+    // Hide toolbar when selection is cleared by clicking (not dragging)
+    const handleMouseDown = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest("[data-ai-toolbar]") || target.closest("[data-ai-result]")) return;
+      if (!aiResult && !aiLoading) {
+        setAiToolbar(null);
+      }
+    };
+
+    editor.addEventListener("mouseup", handleMouseUp as EventListener);
+    editor.addEventListener("mousedown", handleMouseDown as EventListener);
+    return () => {
+      editor.removeEventListener("mouseup", handleMouseUp as EventListener);
+      editor.removeEventListener("mousedown", handleMouseDown as EventListener);
+    };
+  }, [aiResult, aiLoading]);
+
+  const handleAiAction = useCallback(async (action: string) => {
+    if (!aiSelectedText || aiLoading) return;
+    setAiLoading(action);
+    setAiResult(null);
+    // Save position for result popup (below the toolbar)
+    if (aiToolbar) {
+      setAiResultPos({ top: aiToolbar.top + 44, left: aiToolbar.left });
+    }
+    try {
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, text: aiSelectedText }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "AI request failed");
+        setAiLoading(null);
+        return;
+      }
+      const data = await res.json();
+      setAiResult({ action, text: data.result });
+    } catch {
+      toast.error("Could not reach AI service");
+    }
+    setAiLoading(null);
+  }, [aiSelectedText, aiLoading, aiToolbar]);
+
+  const handleAiReplace = useCallback(() => {
+    if (!aiResult || !aiSelectedRange || !editorRef.current) return;
+    const editor = editorRef.current;
+    // Verify the range is still within the editor
+    if (!editor.contains(aiSelectedRange.commonAncestorContainer)) return;
+    try {
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(aiSelectedRange);
+      }
+      aiSelectedRange.deleteContents();
+      aiSelectedRange.insertNode(document.createTextNode(aiResult.text));
+      // Trigger input event to re-lint and auto-save
+      editor.dispatchEvent(new Event("input", { bubbles: true }));
+    } catch {
+      toast.error("Could not replace text — selection may have changed");
+    }
+    setAiResult(null);
+    setAiResultPos(null);
+    setAiToolbar(null);
+    setAiSelectedRange(null);
+  }, [aiResult, aiSelectedRange]);
+
+  const handleAiCopy = useCallback(() => {
+    if (!aiResult) return;
+    navigator.clipboard.writeText(aiResult.text).then(() => {
+      toast.success("Copied to clipboard");
+    });
+  }, [aiResult]);
 
   // Apply CSS Custom Highlight API underlines whenever issues change
   useEffect(() => {
@@ -1413,6 +1530,86 @@ function EditorPageInner() {
                   data-placeholder="Start writing..."
                 />
               </div>
+
+              {/* AI Floating Toolbar */}
+              {aiToolbar && !aiResult && (
+                <div
+                  data-ai-toolbar
+                  className="fixed z-[60] flex items-center gap-1 bg-gray-900 text-white rounded-lg shadow-xl px-2 py-1.5 select-none"
+                  style={{ top: aiToolbar.top, left: aiToolbar.left }}
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  {(["tone", "summarize", "rewrite", "translate"] as const).map((action) => (
+                    <button
+                      key={action}
+                      onClick={() => handleAiAction(action)}
+                      disabled={!!aiLoading}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md hover:bg-white/15 transition disabled:opacity-40 cursor-pointer whitespace-nowrap"
+                    >
+                      {aiLoading === action ? (
+                        <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                      ) : (
+                        <span>{
+                          action === "tone" ? "🎭" :
+                          action === "summarize" ? "📝" :
+                          action === "rewrite" ? "✏️" : "🔄"
+                        }</span>
+                      )}
+                      {action === "tone" ? "Tone" :
+                       action === "summarize" ? "Summarize" :
+                       action === "rewrite" ? "Rewrite" : "Translate"}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* AI Result Popup */}
+              {aiResult && aiResultPos && (
+                <div
+                  data-ai-result
+                  className="fixed z-[60] w-80 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden"
+                  style={{ top: aiResultPos.top, left: aiResultPos.left }}
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  <div className="px-4 py-2.5 bg-gray-50 border-b flex items-center justify-between">
+                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                      {aiResult.action === "tone" ? "🎭 Tone Analysis" :
+                       aiResult.action === "summarize" ? "📝 Summary" :
+                       aiResult.action === "rewrite" ? "✏️ Rewrite" : "🔄 Translation"}
+                    </span>
+                    <button
+                      onClick={() => { setAiResult(null); setAiResultPos(null); setAiToolbar(null); }}
+                      className="text-gray-400 hover:text-gray-600 cursor-pointer"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="px-4 py-3">
+                    <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{aiResult.text}</p>
+                  </div>
+                  <div className="px-4 py-2.5 bg-gray-50 border-t flex items-center justify-end gap-2">
+                    <button
+                      onClick={handleAiCopy}
+                      className="px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100 transition cursor-pointer"
+                    >
+                      Copy
+                    </button>
+                    {(aiResult.action === "rewrite" || aiResult.action === "translate") && (
+                      <button
+                        onClick={handleAiReplace}
+                        className="px-3 py-1.5 text-xs font-semibold text-white bg-primary rounded-md hover:bg-primaryHover transition cursor-pointer"
+                      >
+                        Replace
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* RIGHT PANEL: Issues */}
@@ -1703,14 +1900,9 @@ function EditorPageInner() {
                     desc: "Double your free tier limit",
                   },
                   {
-                    title: "AI-Powered Rewrites",
-                    desc: "Smart suggestions for clarity (coming soon)",
+                    title: "Priority Support",
+                    desc: "Email support within 24 hours",
                   },
-                  {
-                    title: "Pidgin ↔ English Translation",
-                    desc: "Instant translation between languages (coming soon)",
-                  },
-                  { title: "Priority Support", desc: "Email support within 24 hours" },
                 ].map((item) => (
                   <div key={item.title} className="flex items-start gap-3">
                     <svg

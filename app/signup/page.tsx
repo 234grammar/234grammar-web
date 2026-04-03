@@ -285,9 +285,10 @@ export default function SignupPage() {
                           { title: "Unlimited Grammar Checks", desc: "No limits, check as much as you want" },
                           { title: "Nigerian English Support", desc: "Understands \"I'm coming\" and local expressions" },
                           { title: "Full Pidgin Support", desc: "Grammar checking and style suggestions" },
+                          { title: "AI Rewrite, Summarize & Tone", desc: "Powered by AI — select text and enhance it" },
+                          { title: "Pidgin ↔ English Translation", desc: "Instant translation in the editor" },
                           { title: "50 Document Saves", desc: "Auto-save, search, and access anywhere" },
                           { title: "Export to PDF, DOCX, TXT", desc: "Download your work in any format" },
-                          { title: "Works Offline", desc: "Grammar checking runs in your browser" },
                         ].map((item, i) => (
                           <li key={i} className="flex items-start gap-3">
                             <IoIosCheckmarkCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
@@ -301,7 +302,7 @@ export default function SignupPage() {
                       <div className="pt-6 border-t border-ink/8">
                         <p className="text-xs text-ink/45 mb-3"><strong className="text-ink font-semibold">Want more?</strong> Upgrade to Pro anytime for:</p>
                         <ul className="text-xs text-ink/55 space-y-2">
-                          {["100 document saves", "AI-powered rewrites (coming soon)", "Pidgin ↔ English translation (coming soon)", "Priority support"].map((item, i) => (
+                          {["100 document saves", "Priority support"].map((item, i) => (
                             <li key={i} className="flex items-center gap-2">
                               <span className="text-primary">→</span>{item}
                             </li>
@@ -317,11 +318,8 @@ export default function SignupPage() {
                       </div>
                       <ul className="space-y-4 mb-8">
                         {[
-                          { title: "Everything in Free", desc: "Unlimited checks, Pidgin, Nigerian English, exports" },
+                          { title: "Everything in Free", desc: "Unlimited checks, AI features, Pidgin, Nigerian English, exports" },
                           { title: "100 Document Saves", desc: "Double your free tier storage" },
-                          { title: "AI-Powered Rewrites", desc: "Smart suggestions for clarity (coming soon)" },
-                          { title: "Pidgin ↔ English Translation", desc: "Instant translation (coming soon)" },
-                          { title: "Tone Detection", desc: "Match your writing style (coming soon)" },
                           { title: "Priority Support", desc: "Email support within 24 hours" },
                         ].map((item, i) => (
                           <li key={i} className="flex items-start gap-3">
